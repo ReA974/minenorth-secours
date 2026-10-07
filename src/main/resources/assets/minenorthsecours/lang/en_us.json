@@ -1,1 +1,4 @@
-{"item.minenorthsecours.tablette_secours":"Rescue Tablet"}
+{
+ "item.minenorthsecours.tablette_secours": "Tablette des secours",
+ "itemGroup.minenorthsecours": "Secours MineNorth"
+}

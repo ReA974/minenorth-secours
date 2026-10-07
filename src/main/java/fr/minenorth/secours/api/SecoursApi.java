@@ -44,6 +44,11 @@ public final class SecoursApi {
         return new LinkedHashMap<>(SecoursData.get(s).staff);
     }
 
+    /** Vrai si le pompier a pris son service sur la tablette (salaire de l'État). */
+    public static boolean onDuty(MinecraftServer s, UUID id) {
+        return SecoursData.get(s).onDuty.contains(id);
+    }
+
     /** Nom affiché (carte d'identité, sinon pseudo). */
     public static String name(MinecraftServer s, UUID id) { return SecoursService.display(s, id); }
 
