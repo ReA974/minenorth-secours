@@ -120,6 +120,8 @@ public final class SecoursConfig {
     public static SecoursConfig get() { return current; }
 
     public static boolean load() {
+        // Config côté serveur uniquement : le client ne crée ni ne lit aucun fichier.
+        if (net.minecraftforge.fml.loading.FMLEnvironment.dist != net.minecraftforge.api.distmarker.Dist.DEDICATED_SERVER) return true;
         Path f = FMLPaths.CONFIGDIR.get().resolve("minenorth_secours.json");
         boolean ok = true;
         try {
