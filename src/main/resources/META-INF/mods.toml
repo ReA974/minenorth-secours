@@ -1,0 +1,33 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+[[mods]]
+modId="minenorthsecours"
+version="1.0.0"
+displayName="MineNorth Secours"
+authors="MineNorth RP"
+description='''Blessures et secours MineNorth RP : chutes, hémorragies, coma, pompiers et SAMU, hôpital.'''
+[[dependencies.minenorthsecours]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.minenorthsecours]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.minenorthsecours]]
+modId="minenorth_eurobank"
+mandatory=true
+versionRange="[1.0.0,2)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.minenorthsecours]]
+modId="minenorthapi"
+mandatory=true
+versionRange="[1.0.0,2)"
+ordering="AFTER"
+side="BOTH"
