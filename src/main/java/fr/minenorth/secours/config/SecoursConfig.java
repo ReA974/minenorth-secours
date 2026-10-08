@@ -48,6 +48,19 @@ public final class SecoursConfig {
     public boolean blessures_noyade = true;
     public double noyade_coeurs_restants = 5;
 
+    // --- incendies de service (sites : /secours incendie ajouter <nom>)
+    /** Déclenche des incendies sur les sites quand des pompiers sont en service. */
+    public boolean incendies_actifs = true;
+    /** Délai (secondes) entre la prise de service et le premier incendie. */
+    public int incendie_delai_secondes = 20;
+    /** Un nouvel incendie toutes les N minutes tant qu'il y a des pompiers en service. */
+    public double incendie_intervalle_minutes = 20;
+    public int incendie_max_simultanes = 2;
+    /** Rayon (blocs) autour du site où les foyers sont allumés. */
+    public int incendie_rayon = 2;
+    /** Au bout de ce temps (minutes) le feu est coupé d'office, incendie raté. */
+    public double incendie_duree_max_minutes = 30;
+
     // --- facture envoyée au patient quand un secouriste le soigne (0 = gratuit)
     public double facture_soins_euros = 150;
     public double facture_reanimation_euros = 300;

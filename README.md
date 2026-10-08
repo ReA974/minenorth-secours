@@ -47,3 +47,13 @@ Sur la tablette : **Prendre mon service**. Sans service : pas d'alertes, pas de 
 
 ## Autres causes de blessure
 Explosions et accidents de véhicule, feu et lave, noyade, gros coups : voir les clés `blessures_*` et `coup_*` de la config.
+
+## Incendies de service (liés à la carte)
+Quand des pompiers sont **en service**, un incendie se déclenche sur un des **sites** définis par les OP (pas de sites = pas d'incendie).
+- Le feu apparaît sur la **carte** (mod `minenorth_map`, à jour côté serveur ET clients) des pompiers en service, repère « Incendie : <site> ».
+- Tablette > ALERTES : **J'Y VAIS** lance le **guidage** (flèche + distance) vers l'incendie. Même chose vers un blessé inconscient (le repère suit le blessé s'il est déplacé).
+- Éteindre : casser les flammes à la main ou verser de l'eau. Tous les foyers éteints = incendie maîtrisé. Les foyers qui s'éteignent seuls se rallument.
+- Au bout de `incendie_duree_max_minutes` (30) le feu est coupé d'office ; s'il n'y a plus aucun pompier en service pendant 90 s, tout est éteint.
+- Commandes OP : `/secours incendie ajouter <nom>` (à votre position), `supprimer <nom>`, `liste`, `declencher [nom]`, `eteindre`.
+- Choisissez des sols non inflammables (dalles, route) : le feu vanilla peut se propager aux blocs inflammables voisins.
+- Réglages (`config/minenorth_secours.json`) : `incendies_actifs`, `incendie_delai_secondes`, `incendie_intervalle_minutes`, `incendie_max_simultanes`, `incendie_rayon`, `incendie_duree_max_minutes`.

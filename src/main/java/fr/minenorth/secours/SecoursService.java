@@ -108,7 +108,7 @@ public final class SecoursService {
         return rank(p) >= 0 && SecoursData.get(p.server).onDuty.contains(p.getUUID());
     }
     /** Les alertes ne vont qu'aux secouristes en service. */
-    private static void tellSecours(MinecraftServer s, String text) {
+    static void tellSecours(MinecraftServer s, String text) {
         for (ServerPlayer p : s.getPlayerList().getPlayers()) if (onDuty(p)) tell(p, text);
     }
     private static boolean secoursOnline(MinecraftServer s) {
@@ -792,7 +792,7 @@ public final class SecoursService {
         sendAlerts(p, "", true);
     }
 
-    private static void sendAlerts(ServerPlayer p, String msg, boolean ok) {
+    static void sendAlerts(ServerPlayer p, String msg, boolean ok) {
         MinecraftServer s = p.server;
         SecoursData d = SecoursData.get(s);
         long now = System.currentTimeMillis();
@@ -804,7 +804,15 @@ public final class SecoursService {
             int dist = q.level() == p.level() ? (int) Math.sqrt(q.distanceToSqr(p)) : -1;
             out.add(new ModNetwork.Alert(q.getUUID(), display(s, q.getUUID()), j.coma, j.level, j.bleeding,
                     q.blockPosition().getX(), q.blockPosition().getY(), q.blockPosition().getZ(), dist,
-                    j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, j.zones));
+                    j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, j.zones, ModNetwork.Alert.INJURY));
+        }
+        if (onDuty(p)) {
+            for (SecoursData.Incident inc : d.incidents.values()) {
+                int dist = inc.dim.equals(p.level().dimension().location().toString()) ? (int) Math.sqrt(p.distanceToSqr(inc.x + 0.5, inc.y, inc.z + 0.5)) : -1;
+                long left = inc.startMs + SecoursConfig.ms(SecoursConfig.get().incendie_duree_max_minutes) - now;
+                out.add(new ModNetwork.Alert(inc.id, "Incendie : " + inc.site, false, 0, false, inc.x, inc.y, inc.z, dist,
+                        (int) Math.max(0, left / 1000), inc.dispatch, 0, ModNetwork.Alert.FIRE));
+            }
         }
         // Inconscients d'abord, puis ceux à qui il reste le moins de temps.
         out.sort(Comparator.comparing((ModNetwork.Alert a) -> !a.coma()).thenComparingInt(ModNetwork.Alert::secondsLeft));
@@ -870,11 +878,19 @@ public final class SecoursService {
             case ModNetwork.A_DUTY -> {
                 boolean now = !d.onDuty.remove(p.getUUID());
                 if (now) d.onDuty.add(p.getUUID());
+                FireService.onDutyChanged(p, now);
                 tellSecours(s, "§b[Secours] " + display(s, p.getUUID()) + (now ? " prend son service." : " quitte son service."));
                 if (!now) tell(p, "§eVous avez quitté votre service.");
                 sendAlerts(p, now ? "Vous êtes en service : vous recevez les alertes." : "Vous êtes hors service.", true);
             }
             case ModNetwork.A_DISPATCH -> {
+                SecoursData.Incident fire = d.incidents.get(k.target());
+                if (fire != null) {
+                    if (!onDuty(p)) { sendAlerts(p, "Prenez votre service pour intervenir.", false); return; }
+                    FireService.dispatch(p, fire);
+                    sendAlerts(p, "Vous êtes signalé en route" + (fr.minenorth.secours.compat.MapBridge.available() ? " : guidage activé sur la carte." : "."), true);
+                    return;
+                }
                 ServerPlayer victim = s.getPlayerList().getPlayer(k.target());
                 Injury j = victim == null ? null : d.peek(victim.getUUID());
                 if (j == null || !j.coma) { sendAlerts(p, "Cette alerte n'est plus active.", false); return; }
@@ -884,7 +900,8 @@ public final class SecoursService {
                 tell(victim, "§aUne unité de secours est en route : " + unit + ".");
                 tellSecours(s, "§b[Secours] " + unit + " est en route vers " + display(s, victim.getUUID()) + ".");
                 sync(victim);
-                sendAlerts(p, "Vous êtes signalé en route.", true);
+                FireService.guideTo(p, victim);
+                sendAlerts(p, "Vous êtes signalé en route" + (fr.minenorth.secours.compat.MapBridge.available() ? " : guidage activé sur la carte." : "."), true);
             }
             case ModNetwork.A_GRADE -> {
                 if (rank != SecoursData.CHEF) return;
@@ -927,6 +944,7 @@ public final class SecoursService {
         TABLETS.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); FALLS.remove(id); NEXT_BLEED.remove(id);
         if (e.getEntity() instanceof ServerPlayer leaving) {
             SecoursData.get(leaving.server).onDuty.remove(id);
+            FireService.onLogout(id);
             if (CARRY.containsKey(id)) putDown(leaving);   // il portait quelqu'un : on le pose
             dismount(leaving);                              // il était porté ou assis : il redescend avant de partir
         }

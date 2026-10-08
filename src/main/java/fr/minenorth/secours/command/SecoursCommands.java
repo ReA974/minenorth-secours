@@ -1,5 +1,6 @@
 package fr.minenorth.secours.command;
 
+import fr.minenorth.secours.FireService;
 import fr.minenorth.secours.SecoursService;
 import fr.minenorth.secours.config.SecoursConfig;
 import fr.minenorth.secours.data.SecoursData;
@@ -56,6 +57,18 @@ public final class SecoursCommands {
                     SecoursService.giveTablet(target);
                     return say(c.getSource(), "Tablette des secours remise à " + fr.minenorth.api.MineNorth.displayName(target) + ".");
                 })))
+                .then(Commands.literal("incendie")
+                        .then(Commands.literal("ajouter").then(Commands.argument("nom", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .executes(x -> say(x.getSource(), addSite(x.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.StringArgumentType.getString(x, "nom"))))))
+                        .then(Commands.literal("supprimer").then(Commands.argument("nom", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .executes(x -> say(x.getSource(), removeSite(x.getSource().getServer(), com.mojang.brigadier.arguments.StringArgumentType.getString(x, "nom"))))))
+                        .then(Commands.literal("liste").executes(x -> say(x.getSource(), listSites(x.getSource().getServer()))))
+                        .then(Commands.literal("declencher")
+                                .executes(x -> say(x.getSource(), FireService.start(x.getSource().getServer(), null)))
+                                .then(Commands.argument("nom", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .executes(x -> say(x.getSource(), FireService.start(x.getSource().getServer(), com.mojang.brigadier.arguments.StringArgumentType.getString(x, "nom"))))))
+                        .then(Commands.literal("eteindre").executes(x -> say(x.getSource(),
+                                FireService.closeAll(x.getSource().getServer(), SecoursData.get(x.getSource().getServer()), "§e[Secours] Incendie annulé par un administrateur.") + " incendie(s) éteint(s)."))))
                 .then(Commands.literal("hopital").executes(c -> say(c.getSource(), SecoursService.setHospital(c.getSource().getPlayerOrException()))))
                 .then(Commands.literal("reload").executes(c -> {
                     boolean ok = SecoursConfig.load();
@@ -63,6 +76,32 @@ public final class SecoursCommands {
                             : "§cFichier minenorth_secours.json illisible : ancienne configuration conservée."));
                     return ok ? 1 : 0;
                 })));
+    }
+
+    private static String addSite(ServerPlayer p, String name) {
+        SecoursData d = SecoursData.get(p.server);
+        SecoursData.Site s = new SecoursData.Site();
+        s.name = name; s.dim = p.level().dimension().location().toString();
+        s.x = p.blockPosition().getX(); s.y = p.blockPosition().getY(); s.z = p.blockPosition().getZ();
+        d.sites.put(name.toLowerCase(java.util.Locale.ROOT), s);
+        d.setDirty();
+        return "Site d'incendie « " + name + " » défini à votre position. Choisissez un sol non inflammable (dalle, route) : le feu peut se propager.";
+    }
+
+    private static String removeSite(net.minecraft.server.MinecraftServer server, String name) {
+        SecoursData d = SecoursData.get(server);
+        if (d.sites.remove(name.toLowerCase(java.util.Locale.ROOT)) == null) return "Site inconnu : " + name;
+        d.setDirty();
+        return "Site « " + name + " » supprimé.";
+    }
+
+    private static String listSites(net.minecraft.server.MinecraftServer server) {
+        SecoursData d = SecoursData.get(server);
+        if (d.sites.isEmpty()) return "Aucun site d'incendie. /secours incendie ajouter <nom> à l'endroit voulu.";
+        StringBuilder b = new StringBuilder("Sites d'incendie (" + d.sites.size() + ") :");
+        for (SecoursData.Site s : d.sites.values()) b.append("\n - ").append(s.name).append("  ").append(s.x).append(' ').append(s.y).append(' ').append(s.z);
+        b.append("\nIncendies en cours : ").append(d.incidents.size());
+        return b.toString();
     }
 
     private static int grade(CommandSourceStack source, ServerPlayer target, int grade) {

@@ -35,6 +35,23 @@ public class SecoursData extends SavedData {
     }
 
     public final Map<UUID, Injury> injuries = new LinkedHashMap<>();
+    /** Site où un incendie peut se déclencher. */
+    public static final class Site {
+        public String name = "", dim = "";
+        public int x, y, z;
+    }
+
+    /** Incendie en cours : positions des foyers (BlockPos.asLong) encore à éteindre. */
+    public static final class Incident {
+        public UUID id = UUID.randomUUID();
+        public String site = "", dim = "", dispatch = "";
+        public int x, y, z;
+        public long startMs;
+        public final java.util.List<Long> fires = new java.util.ArrayList<>();
+    }
+
+    public final Map<String, Site> sites = new LinkedHashMap<>();
+    public final Map<UUID, Incident> incidents = new LinkedHashMap<>();
     public final Map<UUID, Integer> staff = new LinkedHashMap<>();
     public final Map<UUID, String> names = new LinkedHashMap<>();
     /** Secouristes actuellement en service (non sauvegardé : tout le monde est hors service au redémarrage). */
@@ -76,6 +93,22 @@ public class SecoursData extends SavedData {
             j.coma = t.getBoolean("coma"); j.zones = t.getInt("zones"); j.comaDeadline = t.getLong("comaDeadline"); j.dispatch = t.getString("dispatch");
             d.injuries.put(t.getUUID("id"), j);
         }
+        ListTag stl = tag.getList("sites", Tag.TAG_COMPOUND);
+        for (int i = 0; i < stl.size(); i++) {
+            CompoundTag t = stl.getCompound(i);
+            Site s = new Site();
+            s.name = t.getString("name"); s.dim = t.getString("dim"); s.x = t.getInt("x"); s.y = t.getInt("y"); s.z = t.getInt("z");
+            d.sites.put(s.name.toLowerCase(java.util.Locale.ROOT), s);
+        }
+        ListTag inl = tag.getList("incidents", Tag.TAG_COMPOUND);
+        for (int i = 0; i < inl.size(); i++) {
+            CompoundTag t = inl.getCompound(i);
+            Incident n = new Incident();
+            n.id = t.getUUID("id"); n.site = t.getString("site"); n.dim = t.getString("dim"); n.dispatch = t.getString("dispatch");
+            n.x = t.getInt("x"); n.y = t.getInt("y"); n.z = t.getInt("z"); n.startMs = t.getLong("start");
+            for (long l : t.getLongArray("fires")) n.fires.add(l);
+            d.incidents.put(n.id, n);
+        }
         ListTag sl = tag.getList("staff", Tag.TAG_COMPOUND);
         for (int i = 0; i < sl.size(); i++) { CompoundTag t = sl.getCompound(i); d.staff.put(t.getUUID("id"), t.getInt("grade")); }
         ListTag nl = tag.getList("names", Tag.TAG_COMPOUND);
@@ -104,6 +137,22 @@ public class SecoursData extends SavedData {
             il.add(t);
         });
         tag.put("injuries", il);
+        ListTag stl = new ListTag();
+        for (Site s : sites.values()) {
+            CompoundTag t = new CompoundTag();
+            t.putString("name", s.name); t.putString("dim", s.dim); t.putInt("x", s.x); t.putInt("y", s.y); t.putInt("z", s.z);
+            stl.add(t);
+        }
+        tag.put("sites", stl);
+        ListTag inl = new ListTag();
+        for (Incident n : incidents.values()) {
+            CompoundTag t = new CompoundTag();
+            t.putUUID("id", n.id); t.putString("site", n.site); t.putString("dim", n.dim); t.putString("dispatch", n.dispatch);
+            t.putInt("x", n.x); t.putInt("y", n.y); t.putInt("z", n.z); t.putLong("start", n.startMs);
+            t.putLongArray("fires", n.fires.stream().mapToLong(Long::longValue).toArray());
+            inl.add(t);
+        }
+        tag.put("incidents", inl);
         ListTag sl = new ListTag();
         staff.forEach((id, g) -> { CompoundTag t = new CompoundTag(); t.putUUID("id", id); t.putInt("grade", g); sl.add(t); });
         tag.put("staff", sl);

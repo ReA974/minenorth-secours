@@ -23,7 +23,7 @@ public final class ModNetwork {
     public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8;
     public static final UUID NONE = new UUID(0, 0);
 
-    private static final String PROTOCOL = "1";
+    private static final String PROTOCOL = "2";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthSecours.MOD_ID, "network"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
     private static int id = 0;
@@ -67,14 +67,15 @@ public final class ModNetwork {
     }
 
     public record Alert(UUID id, String name, boolean coma, int level, boolean bleeding, int x, int y, int z, int distance,
-                        int secondsLeft, String dispatch, int zones) {
+                        int secondsLeft, String dispatch, int zones, int kind) {
+        public static final int INJURY = 0, FIRE = 1;
         static void encode(FriendlyByteBuf b, Alert a) {
             b.writeUUID(a.id); b.writeUtf(a.name); b.writeBoolean(a.coma); b.writeVarInt(a.level); b.writeBoolean(a.bleeding);
-            b.writeInt(a.x); b.writeInt(a.y); b.writeInt(a.z); b.writeInt(a.distance); b.writeVarInt(a.secondsLeft); b.writeUtf(a.dispatch); b.writeVarInt(a.zones);
+            b.writeInt(a.x); b.writeInt(a.y); b.writeInt(a.z); b.writeInt(a.distance); b.writeVarInt(a.secondsLeft); b.writeUtf(a.dispatch); b.writeVarInt(a.zones); b.writeVarInt(a.kind);
         }
         static Alert decode(FriendlyByteBuf b) {
             return new Alert(b.readUUID(), b.readUtf(), b.readBoolean(), b.readVarInt(), b.readBoolean(),
-                    b.readInt(), b.readInt(), b.readInt(), b.readInt(), b.readVarInt(), b.readUtf(), b.readVarInt());
+                    b.readInt(), b.readInt(), b.readInt(), b.readInt(), b.readVarInt(), b.readUtf(), b.readVarInt(), b.readVarInt());
         }
     }
     public record Member(UUID id, String name, int grade, boolean online, boolean duty) {
