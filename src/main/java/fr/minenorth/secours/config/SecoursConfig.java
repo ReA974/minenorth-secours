@@ -13,11 +13,11 @@ public final class SecoursConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static SecoursConfig current = new SecoursConfig();
 
-    /** Un objet de soin. item = identifiant Minecraft (F3+H pour le voir en jeu). */
+    /** Un objet de soin (bandage, trousse de soins, défibrillateur : items du mod). */
     public static final class Objet {
-        public String item; public int secondes; public boolean consomme; public boolean reserve_secours;
-        Objet(String item, int secondes, boolean consomme, boolean reserveSecours) {
-            this.item = item; this.secondes = secondes; this.consomme = consomme; this.reserve_secours = reserveSecours;
+        public int secondes; public boolean consomme; public boolean reserve_secours;
+        Objet(int secondes, boolean consomme, boolean reserveSecours) {
+            this.secondes = secondes; this.consomme = consomme; this.reserve_secours = reserveSecours;
         }
     }
 
@@ -106,7 +106,11 @@ public final class SecoursConfig {
     public boolean coma_rendu_allonge = true;
     /** Utilisé seulement si coma_rendu_allonge = false. SLEEPING = allongé sur le dos ; SWIMMING = à plat ventre. */
     public String coma_pose = "SLEEPING";
-    public double coeurs_apres_reanimation = 3;
+    /** true : un inconscient peut être tué par n'importe quel dégât et se réveille à l'hôpital. false : il est invulnérable. */
+    public boolean coma_mortel = true;
+    /** Mini-jeu du défibrillateur : nombre de battements et précision minimale (0 à 1) pour réussir. */
+    public int defib_battements = 12;
+    public double defib_precision_min = 0.7;
     public double facture_hopital_euros = 500;
 
     // --- PNJ de soins
@@ -121,9 +125,10 @@ public final class SecoursConfig {
     public int pnj_distance_max = 5;
 
     // --- objets de soin
-    public Objet bandage = new Objet("minecraft:paper", 4, true, false);
-    public Objet trousse = new Objet("minecraft:glistering_melon_slice", 8, true, true);
-    public Objet defibrillateur = new Objet("minecraft:totem_of_undying", 10, false, true);
+    public Objet bandage = new Objet(4, true, false);
+    public Objet trousse = new Objet(8, true, true);
+    /** secondes est ignoré : la durée dépend du mini-jeu de rythme. */
+    public Objet defibrillateur = new Objet(10, false, true);
     public int distance_soin = 4;
 
     // --- coma
@@ -146,9 +151,11 @@ public final class SecoursConfig {
             ok = false;
         }
         SecoursConfig c = current, d = new SecoursConfig();
-        if (c.bandage == null || c.bandage.item == null) c.bandage = d.bandage;
-        if (c.trousse == null || c.trousse.item == null) c.trousse = d.trousse;
-        if (c.defibrillateur == null || c.defibrillateur.item == null) c.defibrillateur = d.defibrillateur;
+        if (c.bandage == null) c.bandage = d.bandage;
+        if (c.trousse == null) c.trousse = d.trousse;
+        if (c.defibrillateur == null) c.defibrillateur = d.defibrillateur;
+        c.defib_battements = Math.max(1, c.defib_battements);
+        c.defib_precision_min = Math.max(0, Math.min(1, c.defib_precision_min));
         if (c.coma_pose == null) c.coma_pose = "SLEEPING";
         if (c.protection_objets == null) c.protection_objets = new java.util.ArrayList<>();
         if (c.commandes_autorisees_coma == null) c.commandes_autorisees_coma = d.commandes_autorisees_coma;

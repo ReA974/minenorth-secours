@@ -1,0 +1,94 @@
+{
+  "texture_size": [32, 32],
+  "textures": {
+    "0": "minenorthsecours:item/defibrillateur",
+    "particle": "minenorthsecours:item/defibrillateur"
+  },
+  "elements": [
+    {
+      "name": "boitier",
+      "from": [3, 3, 6], "to": [13, 9, 10],
+      "faces": {
+        "north": {"uv": [16, 0, 24, 8], "texture": "#0"},
+        "south": {"uv": [16, 0, 24, 8], "texture": "#0"},
+        "east": {"uv": [0, 0, 16, 10], "texture": "#0"},
+        "west": {"uv": [0, 0, 16, 10], "texture": "#0"},
+        "up": {"uv": [16, 12, 32, 20], "texture": "#0"},
+        "down": {"uv": [8, 12, 16, 20], "texture": "#0"}
+      }
+    },
+    {
+      "name": "poignee",
+      "from": [6, 9, 7], "to": [10, 11, 9],
+      "faces": {
+        "north": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "south": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "east": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "west": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "up": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "down": {"uv": [8, 12, 16, 20], "texture": "#0"}
+      }
+    },
+    {
+      "name": "bouton_choc",
+      "from": [9.5, 4, 5.5], "to": [12, 6.5, 6],
+      "faces": {
+        "north": {"uv": [0, 12, 8, 20], "texture": "#0"},
+        "up": {"uv": [0, 12, 8, 20], "texture": "#0"},
+        "east": {"uv": [0, 12, 8, 20], "texture": "#0"},
+        "west": {"uv": [0, 12, 8, 20], "texture": "#0"},
+        "down": {"uv": [0, 12, 8, 20], "texture": "#0"}
+      }
+    },
+    {
+      "name": "palette_gauche",
+      "from": [0.5, 3, 6.5], "to": [2.5, 7, 9.5],
+      "faces": {
+        "north": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "south": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "east": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "west": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "up": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "down": {"uv": [24, 0, 32, 8], "texture": "#0"}
+      }
+    },
+    {
+      "name": "cable_gauche",
+      "from": [2.5, 5, 7.5], "to": [3, 6, 8.5],
+      "faces": {
+        "north": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "up": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "down": {"uv": [8, 12, 16, 20], "texture": "#0"}
+      }
+    },
+    {
+      "name": "palette_droite",
+      "from": [13.5, 3, 6.5], "to": [15.5, 7, 9.5],
+      "faces": {
+        "north": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "south": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "east": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "west": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "up": {"uv": [24, 0, 32, 8], "texture": "#0"},
+        "down": {"uv": [24, 0, 32, 8], "texture": "#0"}
+      }
+    },
+    {
+      "name": "cable_droit",
+      "from": [13, 5, 7.5], "to": [13.5, 6, 8.5],
+      "faces": {
+        "north": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "up": {"uv": [8, 12, 16, 20], "texture": "#0"},
+        "down": {"uv": [8, 12, 16, 20], "texture": "#0"}
+      }
+    }
+  ],
+  "display": {
+    "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [1.1, 1.1, 1.1]},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.6, 0.6, 0.6]},
+    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]},
+    "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 1], "scale": [0.7, 0.7, 0.7]},
+    "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [1, 2, 0], "scale": [0.75, 0.75, 0.75]},
+    "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [1, 2, 0], "scale": [0.75, 0.75, 0.75]}
+  }
+}

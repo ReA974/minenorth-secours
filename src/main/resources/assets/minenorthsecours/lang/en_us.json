@@ -1,4 +1,7 @@
 {
- "item.minenorthsecours.tablette_secours": "Tablette des secours",
- "itemGroup.minenorthsecours": "Secours MineNorth"
+ "item.minenorthsecours.tablette_secours": "Rescue Tablet",
+ "item.minenorthsecours.bandage": "Bandage",
+ "item.minenorthsecours.trousse_soins": "First Aid Kit",
+ "item.minenorthsecours.defibrillateur": "Defibrillator",
+ "itemGroup.minenorthsecours": "MineNorth Rescue"
 }
