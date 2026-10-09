@@ -259,7 +259,14 @@ public final class SecoursService {
         SecoursData d = SecoursData.get(s);
         d.injuries.remove(p.getUUID());
         dismount(p);
-        d.note(p.getUUID(), "Réveil à l'hôpital sans intervention des secours");
+        hospitalArrival(p, "Réveil à l'hôpital sans intervention des secours");
+    }
+
+    /** Téléporte à l'hôpital (si défini), rend de la vie et prélève la facture. */
+    private static void hospitalArrival(ServerPlayer p, String note) {
+        MinecraftServer s = p.server;
+        SecoursData d = SecoursData.get(s);
+        d.note(p.getUUID(), note);
         if (d.hasHospital) {
             ServerLevel level = s.getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(d.hospitalDim)));
             if (level != null) p.teleportTo(level, d.hx, d.hy, d.hz, p.getYRot(), p.getXRot());
@@ -286,7 +293,7 @@ public final class SecoursService {
     /** Un joueur inconscient ne peut plus être frappé. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void attacked(LivingAttackEvent e) {
-        if (e.getEntity() instanceof ServerPlayer p && isComa(p) && !e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) e.setCanceled(true);
+        if (e.getEntity() instanceof ServerPlayer p && !SecoursConfig.get().coma_mortel && isComa(p) && !e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) e.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -296,7 +303,7 @@ public final class SecoursService {
         SecoursConfig cfg = SecoursConfig.get();
         SecoursData d = SecoursData.get(p.server);
         Injury j = d.injury(p.getUUID());
-        if (j.coma) { e.setCanceled(true); return; }
+        if (j.coma) { if (!cfg.coma_mortel) e.setCanceled(true); return; }
 
         boolean isFall = e.getSource().is(DamageTypeTags.IS_FALL);
         boolean gun = cfg.hemorragie_par_balle && isGun(e.getSource());
@@ -359,11 +366,27 @@ public final class SecoursService {
     @SubscribeEvent
     public static void death(LivingDeathEvent e) {
         if (e.getEntity() instanceof ServerPlayer p) {
+            Injury dying = SecoursData.get(p.server).peek(p.getUUID());
+            if (dying != null && dying.coma && SecoursConfig.get().coma_mortel) {
+                HOSPITAL_RESPAWN.add(p.getUUID());
+                SecoursData.get(p.server).note(p.getUUID(), "Mort pendant le coma");
+                tellSecours(p.server, "§c[Secours] " + display(p.server, p.getUUID()) + " est mort pendant son coma.");
+            }
+            if (CARRY.containsKey(p.getUUID())) putDown(p);
             SecoursData.get(p.server).injuries.remove(p.getUUID());
             SecoursData.get(p.server).setDirty();
             CLINICS.remove(p.getUUID());
             broadcastComa(p.server);
         }
+    }
+
+    /** Joueurs morts pendant leur coma : au prochain respawn ils se réveillent à l'hôpital. */
+    private static final Set<UUID> HOSPITAL_RESPAWN = new HashSet<>();
+
+    @SubscribeEvent
+    public static void respawn(PlayerEvent.PlayerRespawnEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p) || e.isEndConquered() || !HOSPITAL_RESPAWN.remove(p.getUUID())) return;
+        hospitalArrival(p, "Réveil à l'hôpital après un décès pendant le coma");
     }
 
     // ------------------------------------------------------------------ joueur inconscient : aucune action
@@ -934,7 +957,7 @@ public final class SecoursService {
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent e) {
         UUID id = e.getEntity().getUUID();
-        TABLETS.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); FALLS.remove(id); NEXT_BLEED.remove(id);
+        TABLETS.remove(id); HOSPITAL_RESPAWN.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); FALLS.remove(id); NEXT_BLEED.remove(id);
         if (e.getEntity() instanceof ServerPlayer leaving) {
             SecoursData.get(leaving.server).onDuty.remove(id);
             FireService.onLogout(id);
