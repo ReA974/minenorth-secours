@@ -11,6 +11,7 @@ import net.minecraft.world.item.ArmorItem;
 import fr.minenorth.secours.config.SecoursConfig;
 import fr.minenorth.secours.data.SecoursData;
 import fr.minenorth.secours.data.SecoursData.Injury;
+import fr.minenorth.secours.item.CareItem;
 import fr.minenorth.secours.item.ModItems;
 import fr.minenorth.secours.network.ModNetwork;
 import fr.minenorth.secours.network.ModNetwork.ActionPacket;
@@ -249,8 +250,7 @@ public final class SecoursService {
 
     private static void wake(ServerPlayer p, Injury j) {
         j.coma = false; j.dispatch = ""; j.comaDeadline = 0;
-        float min = (float) (SecoursConfig.get().coeurs_apres_reanimation * 2.0);
-        if (p.getHealth() < min) p.setHealth(Math.min(p.getMaxHealth(), min));
+        p.setHealth(p.getMaxHealth());
     }
 
     /** Fin du délai sans secours : réveil à l'hôpital, soigné, avec une facture. */
@@ -393,15 +393,7 @@ public final class SecoursService {
 
     // ------------------------------------------------------------------ soins par objets
     private static int careType(ItemStack stack) {
-        if (stack.isEmpty()) return -1;
-        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        if (key == null) return -1;
-        SecoursConfig cfg = SecoursConfig.get();
-        String id = key.toString();
-        if (id.equals(cfg.defibrillateur.item)) return DEFIB;
-        if (id.equals(cfg.trousse.item)) return TROUSSE;
-        if (id.equals(cfg.bandage.item)) return BANDAGE;
-        return -1;
+        return stack.getItem() instanceof CareItem ci ? ci.type : -1;
     }
 
     private static SecoursConfig.Objet objet(int type) {
@@ -451,6 +443,7 @@ public final class SecoursService {
             if (rescuer != target) bar(rescuer, "§aBandage posé.");
         } else {
             j.bleeding = false; j.level = SecoursData.AUCUNE; j.healAt = 0; j.zones = 0;
+            target.setHealth(target.getMaxHealth());
             tell(target, "§aVos blessures ont été soignées.");
             bar(rescuer, "§aSoins terminés.");
             d.note(target.getUUID(), "Soigné par " + display(rescuer.server, rescuer.getUUID()));
