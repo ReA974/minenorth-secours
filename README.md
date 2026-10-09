@@ -47,7 +47,7 @@ Réglages : `protection_active`, `protection_points_min`, `protection_objets`, `
 Sur la tablette : **Prendre mon service**. Sans service : pas d'alertes, pas de soins réservés, pas de transport.
 - Sneak + clic droit, main vide, sur un joueur : diagnostic.
 - Clic droit, main vide, sur un joueur inconscient : le porter. S'accroupir : le poser.
-- En portant un blessé, clic droit sur un véhicule : l'y installer.
+- En portant un blessé, clic droit sur un véhicule : l'y installer. Sur un véhicule MTS du pack `minenorthpolicecar` (VSAV), le blessé est installé **sur le brancard** (siège `seat_brancard`) ; le brancard sort et rentre avec les portes arrière. Autre véhicule MTS : premier siège libre.
 - Trousse et défibrillateur envoient une facture au patient (`facture_soins_euros`, `facture_reanimation_euros`).
 - Onglet Dossiers : historique médical de chaque citoyen.
 
@@ -63,3 +63,9 @@ Quand des pompiers sont **en service**, un incendie se déclenche sur un des **s
 - Commandes OP : `/secours incendie ajouter <nom>` (à votre position), `supprimer <nom>`, `liste`, `declencher [nom]`, `eteindre`.
 - Choisissez des sols non inflammables (dalles, route) : le feu vanilla peut se propager aux blocs inflammables voisins.
 - Réglages (`config/minenorth_secours.json`) : `incendies_actifs`, `incendie_delai_secondes`, `incendie_intervalle_minutes`, `incendie_max_simultanes`, `incendie_rayon`, `incendie_duree_max_minutes`.
+
+## Licence
+
+**Tous droits réservés - MineNorthRP.** Réutilisation, copie, modification, décompilation / ingénierie
+inverse (y compris par outils d'intelligence artificielle) et utilisation pour entraîner une IA sont
+**interdites** sans autorisation écrite. Voir [LICENSE](LICENSE).
