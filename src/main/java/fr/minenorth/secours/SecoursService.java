@@ -502,7 +502,7 @@ public final class SecoursService {
         if (!victim.isPassenger()) return;
         var vehicle = victim.getVehicle();
         RELEASING.add(victim.getUUID());
-        victim.stopRiding();
+        if (!fr.minenorth.secours.compat.Mts.isSeated(victim) || !fr.minenorth.secours.compat.Mts.unseat(victim)) victim.stopRiding();
         RELEASING.remove(victim.getUUID());
         if (vehicle instanceof ServerPlayer carrier) { CARRY.remove(carrier.getUUID()); passengersChanged(carrier); }
     }
@@ -531,6 +531,18 @@ public final class SecoursService {
         ServerPlayer victim = carrier.server.getPlayerList().getPlayer(CARRY.get(carrier.getUUID()));
         if (victim == null) { CARRY.remove(carrier.getUUID()); return; }
         dismount(victim);
+        net.minecraft.world.entity.Entity mts = fr.minenorth.secours.compat.Mts.vehicleOf(vehicle);
+        if (mts != null) {
+            RELEASING.add(victim.getUUID());   // le passage d'un siège à l'autre ne doit pas être bloqué par le coma
+            boolean onStretcher = fr.minenorth.secours.compat.Mts.seatPlayer(victim, mts, fr.minenorth.secours.compat.Mts.STRETCHER_SEAT);
+            boolean seated = onStretcher || fr.minenorth.secours.compat.Mts.seatPlayer(victim, mts, null);
+            RELEASING.remove(victim.getUUID());
+            if (seated) {
+                bar(carrier, onStretcher ? "§aBlessé installé sur le brancard. Clic droit sur lui, main vide, pour le reprendre."
+                        : "§aBlessé installé dans le véhicule. Clic droit sur lui, main vide, pour le reprendre.");
+                return;
+            }
+        }
         if (victim.startRiding(vehicle, true)) {
             bar(carrier, "§aBlessé installé dans le véhicule. Clic droit sur lui, main vide, pour le reprendre.");
         } else {
