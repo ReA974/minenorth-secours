@@ -19,6 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.level.BlockEvent;
@@ -48,6 +49,17 @@ public final class FireService {
     /** Unité -> blessé vers lequel la carte la guide. */
     private static final Map<UUID, Guide> GUIDES = new HashMap<>();
     private static long pendingStart, nextAuto, noDutySince;
+
+    /**
+     * Âge (0-15) de chaque foyer au dernier passage. Une flamme qui disparaît « jeune » a été éteinte (extincteur ou camion MTS,
+     * eau, main) ; une flamme usée ou sous la pluie s'est simplement éteinte seule et repart.
+     */
+    private static final Map<Long, Integer> LAST_AGE = new HashMap<>();
+    private static final int NATURAL_AGE = 13;
+
+    private static int ageOf(BlockState st) {
+        return st.hasProperty(BlockStateProperties.AGE_15) ? st.getValue(BlockStateProperties.AGE_15) : 0;
+    }
 
     private FireService() {}
 
@@ -141,6 +153,7 @@ public final class FireService {
                 if (!out.contains(pos.asLong())) {
                     level.setBlock(pos, BaseFireBlock.getState(level, pos), 3);
                     out.add(pos.asLong());
+                    LAST_AGE.put(pos.asLong(), 0);
                 }
                 break;
             }
@@ -235,10 +248,14 @@ public final class FireService {
             BlockPos pos = BlockPos.of(l);
             if (!level.isLoaded(pos)) continue;
             BlockState st = level.getBlockState(pos);
-            if (st.getBlock() instanceof BaseFireBlock) continue;
-            if (!st.isAir()) { inc.fires.remove(l); changed = true; continue; }   // eau ou bloc posé : éteint
-            if (canBurnAt(level, pos)) level.setBlock(pos, BaseFireBlock.getState(level, pos), 3); // simple extinction naturelle : le feu repart
-            else { inc.fires.remove(l); changed = true; }
+            if (st.getBlock() instanceof BaseFireBlock) { LAST_AGE.put(l, ageOf(st)); continue; }
+            if (!st.isAir()) { inc.fires.remove(l); LAST_AGE.remove(l); changed = true; continue; }   // eau ou bloc posé : éteint
+            // Flamme disparue : usure naturelle (âge avancé ou pluie) -> le feu repart ; sinon extincteur / camion MTS -> éteint pour de bon.
+            boolean natural = LAST_AGE.getOrDefault(l, 15) >= NATURAL_AGE || level.isRainingAt(pos);
+            if (natural && canBurnAt(level, pos)) {
+                level.setBlock(pos, BaseFireBlock.getState(level, pos), 3);
+                LAST_AGE.put(l, 0);
+            } else { inc.fires.remove(l); LAST_AGE.remove(l); changed = true; }
         }
         if (changed) d.setDirty();
         if (inc.fires.isEmpty()) {
@@ -248,6 +265,7 @@ public final class FireService {
     }
 
     private static void close(MinecraftServer s, SecoursData d, Incident inc, String message) {
+        for (long f : inc.fires) LAST_AGE.remove(f);
         d.incidents.remove(inc.id);
         d.setDirty();
         for (ServerPlayer p : s.getPlayerList().getPlayers()) {

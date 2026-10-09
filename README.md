@@ -52,7 +52,7 @@ Explosions et accidents de véhicule, feu et lave, noyade, gros coups : voir les
 Quand des pompiers sont **en service**, un incendie se déclenche sur un des **sites** définis par les OP (pas de sites = pas d'incendie).
 - Le feu apparaît sur la **carte** (mod `minenorth_map`, à jour côté serveur ET clients) des pompiers en service, repère « Incendie : <site> ».
 - Tablette > ALERTES : **J'Y VAIS** lance le **guidage** (flèche + distance) vers l'incendie. Même chose vers un blessé inconscient (le repère suit le blessé s'il est déplacé).
-- Éteindre : casser les flammes à la main ou verser de l'eau. Tous les foyers éteints = incendie maîtrisé. Les foyers qui s'éteignent seuls se rallument.
+- Éteindre : casser les flammes à la main, verser de l'eau, ou utiliser l'**extincteur / le camion de pompiers MTS** (une flamme retirée « jeune » est éteinte pour de bon ; une flamme qui s'use ou que la pluie éteint repart). Tous les foyers éteints = incendie maîtrisé. Les foyers qui s'éteignent seuls se rallument.
 - Au bout de `incendie_duree_max_minutes` (30) le feu est coupé d'office ; s'il n'y a plus aucun pompier en service pendant 90 s, tout est éteint.
 - Commandes OP : `/secours incendie ajouter <nom>` (à votre position), `supprimer <nom>`, `liste`, `declencher [nom]`, `eteindre`.
 - Choisissez des sols non inflammables (dalles, route) : le feu vanilla peut se propager aux blocs inflammables voisins.
