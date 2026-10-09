@@ -13,10 +13,16 @@ Optionnels (détectés automatiquement) : TACZ (blessures par balle), Identité 
 
 Une balle (arme TACZ) provoque une hémorragie : 1 demi-cœur perdu toutes les 8 s jusqu'au bandage.
 
-## Objets de soin (modifiables dans la config)
-- Bandage : `minecraft:paper` — tout le monde. Sur soi : sneak + clic droit. Sur un autre : clic droit sur lui.
-- Trousse de soins : `minecraft:glistering_melon_slice` — secours uniquement, soigne toutes les blessures.
-- Défibrillateur : `minecraft:totem_of_undying` — secours uniquement, réanime.
+## Objets de soin
+Trois items du mod, dans l'onglet créatif « Secours MineNorth » (avec la tablette). Durées, consommation et réserve aux secours : clés `bandage`, `trousse`, `defibrillateur` de la config.
+- Bandage : tout le monde. Sur soi : sneak + clic droit. Sur un autre : clic droit sur lui. Arrête l'hémorragie, ne rend pas de vie.
+- Trousse de soins : secours en service uniquement. Soigne toutes les blessures et rend **toute la vie**.
+- Défibrillateur : secours en service uniquement, clic droit sur un inconscient. Lance un **mini-jeu de rythme** : cliquer (ou Espace) sur chaque battement qui atteint la ligne.
+  Réussite à partir de `defib_precision_min` (0,7) sur `defib_battements` (12) battements : le patient est réanimé avec **toute sa vie**. Échec : l'objet n'est pas consommé, on recommence. Échap abandonne.
+  Le serveur génère les battements et recalcule la précision : le client ne peut pas se déclarer vainqueur.
+
+## Coma mortel
+Avec `coma_mortel` (true par défaut), un inconscient n'est plus invulnérable : coups, balles, feu ou chute peuvent le tuer. Il meurt réellement, puis réapparaît à l'hôpital (`/secours hopital`) avec la facture d'hôpital et une note dans son dossier médical. Les secours en service sont prévenus. `coma_mortel: false` rétablit l'ancien comportement.
 
 ## Commandes (OP / console)
 - `/soins <joueur>` : menu du PNJ de soins.
