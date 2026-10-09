@@ -213,7 +213,10 @@ public class GenAssets {
         return sb.toString();
     }
 
-    static String display(float gui, float hand, float ground) {
+    static String display(float gui, float hand, float ground) { return display(gui, hand, ground, 45, 225, hand); }
+
+    /** fpRight / fpLeft : rotation Y en première personne ; fpScale : taille en première personne. */
+    static String display(float gui, float hand, float ground, int fpRight, int fpLeft, float fpScale) {
         return "{\n"
             + "    \"gui\": {\"rotation\": [30, 225, 0], \"translation\": [0, 0, 0], \"scale\": [" + f(gui) + ", " + f(gui) + ", " + f(gui) + "]},\n"
             + "    \"ground\": {\"rotation\": [0, 0, 0], \"translation\": [0, 3, 0], \"scale\": [" + f(ground) + ", " + f(ground) + ", " + f(ground) + "]},\n"
@@ -221,8 +224,8 @@ public class GenAssets {
             + "    \"head\": {\"rotation\": [0, 180, 0], \"translation\": [0, 13, 7], \"scale\": [1, 1, 1]},\n"
             + "    \"thirdperson_righthand\": {\"rotation\": [75, 45, 0], \"translation\": [0, 2.5, 0], \"scale\": [" + f(hand) + ", " + f(hand) + ", " + f(hand) + "]},\n"
             + "    \"thirdperson_lefthand\": {\"rotation\": [75, 45, 0], \"translation\": [0, 2.5, 0], \"scale\": [" + f(hand) + ", " + f(hand) + ", " + f(hand) + "]},\n"
-            + "    \"firstperson_righthand\": {\"rotation\": [0, 45, 0], \"translation\": [0, 1, 0], \"scale\": [" + f(hand) + ", " + f(hand) + ", " + f(hand) + "]},\n"
-            + "    \"firstperson_lefthand\": {\"rotation\": [0, 225, 0], \"translation\": [0, 1, 0], \"scale\": [" + f(hand) + ", " + f(hand) + ", " + f(hand) + "]}\n  }";
+            + "    \"firstperson_righthand\": {\"rotation\": [0, " + fpRight + ", 0], \"translation\": [0, 1, 0], \"scale\": [" + f(fpScale) + ", " + f(fpScale) + ", " + f(fpScale) + "]},\n"
+            + "    \"firstperson_lefthand\": {\"rotation\": [0, " + fpLeft + ", 0], \"translation\": [0, 1, 0], \"scale\": [" + f(fpScale) + ", " + f(fpScale) + ", " + f(fpScale) + "]}\n  }";
     }
 
     static void write(String name, String json) throws Exception {
@@ -335,7 +338,7 @@ public class GenAssets {
         b.add(new Box("pied", 5, 0, 7.4f, 11, 1, 8.6f).all("gray_dk"));
         Map<String, String> t = new LinkedHashMap<>();
         t.put("0", NS + "secours_atlas"); t.put("1", NS + "tablette_ecran"); t.put("particle", NS + "secours_atlas");
-        write("tablette_secours", model(b, -0.6f, t, display(0.95f, 0.6f, 0.55f), ""));
+        write("tablette_secours", model(b, -0.6f, t, display(0.95f, 0.6f, 0.55f, -30, -30, 0.38f), ""));
     }
 
     public static void main(String[] a) throws Exception {
