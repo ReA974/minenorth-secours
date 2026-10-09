@@ -383,12 +383,6 @@ public final class SecoursService {
     /** Joueurs morts pendant leur coma : au prochain respawn ils se réveillent à l'hôpital. */
     private static final Set<UUID> HOSPITAL_RESPAWN = new HashSet<>();
 
-    @SubscribeEvent
-    public static void respawn(PlayerEvent.PlayerRespawnEvent e) {
-        if (!(e.getEntity() instanceof ServerPlayer p) || e.isEndConquered() || !HOSPITAL_RESPAWN.remove(p.getUUID())) return;
-        hospitalArrival(p, "Réveil à l'hôpital après un décès pendant le coma");
-    }
-
     // ------------------------------------------------------------------ joueur inconscient : aucune action
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void interact(PlayerInteractEvent e) {
@@ -963,7 +957,10 @@ public final class SecoursService {
 
     @SubscribeEvent
     public static void respawn(PlayerEvent.PlayerRespawnEvent e) {
-        if (e.getEntity() instanceof ServerPlayer p) { applyEffects(p, SecoursData.get(p.server).peek(p.getUUID())); sync(p); }
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        if (!e.isEndConquered() && HOSPITAL_RESPAWN.remove(p.getUUID())) hospitalArrival(p, "Réveil à l'hôpital après un décès pendant le coma");
+        applyEffects(p, SecoursData.get(p.server).peek(p.getUUID()));
+        sync(p);
     }
 
     @SubscribeEvent
