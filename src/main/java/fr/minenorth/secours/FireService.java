@@ -1,5 +1,6 @@
 package fr.minenorth.secours;
 
+import fr.minenorth.api.MineNorth;
 import fr.minenorth.secours.compat.MapBridge;
 import fr.minenorth.secours.config.SecoursConfig;
 import fr.minenorth.secours.data.SecoursData;
@@ -56,6 +57,15 @@ public final class FireService {
      */
     private static final Map<Long, Integer> LAST_AGE = new HashMap<>();
     private static final int NATURAL_AGE = 13;
+
+    // État de suivi des incendies (en mémoire : repart de zéro au redémarrage du serveur).
+    private static final Map<UUID, Long> NEXT_SPREAD = new HashMap<>();
+    private static final Map<UUID, Long> REKINDLE_AT = new HashMap<>();
+    private static final Map<UUID, Integer> REKINDLES = new HashMap<>();
+    /** incendie -> (pompier -> secondes passées à moins de incendie_prime_distance du site). */
+    private static final Map<UUID, Map<UUID, Integer>> PRESENCE = new HashMap<>();
+    /** Mode calme actif (trop de blessés à soigner). */
+    private static boolean calm;
 
     private static int ageOf(BlockState st) {
         return st.hasProperty(BlockStateProperties.AGE_15) ? st.getValue(BlockStateProperties.AGE_15) : 0;
@@ -123,7 +133,9 @@ public final class FireService {
         ServerLevel level = level(s, st.dim);
         if (level == null) return "Dimension introuvable pour le site " + st.name + ".";
 
-        List<Long> fires = ignite(level, st, Math.max(1, SecoursConfig.get().incendie_rayon));
+        SecoursConfig cf = SecoursConfig.get();
+        int wanted = cf.incendie_foyers_min + RNG.nextInt(Math.max(1, cf.incendie_foyers_max - cf.incendie_foyers_min + 1));
+        List<Long> fires = ignite(level, st, Math.max(1, cf.incendie_rayon), wanted, 60);
         if (fires.isEmpty()) return "Impossible d'allumer un feu sur le site " + st.name + " (pas de sol plein ?).";
 
         Incident inc = new Incident();
@@ -140,17 +152,16 @@ public final class FireService {
         return "Incendie déclenché : " + st.name + " (" + fires.size() + " foyers).";
     }
 
-    private static List<Long> ignite(ServerLevel level, Site st, int radius) {
+    private static List<Long> ignite(ServerLevel level, Site st, int radius, int wanted, int maxTries) {
         List<Long> out = new ArrayList<>();
-        int wanted = 4 + RNG.nextInt(4);
         level.getChunkAt(new BlockPos(st.x, st.y, st.z)); // charge la zone si besoin
-        for (int tries = 0; tries < 60 && out.size() < wanted; tries++) {
+        for (int tries = 0; tries < maxTries && out.size() < wanted; tries++) {
             int x = st.x + (tries == 0 ? 0 : RNG.nextInt(radius * 2 + 1) - radius);
             int z = st.z + (tries == 0 ? 0 : RNG.nextInt(radius * 2 + 1) - radius);
             for (int y = st.y + 2; y >= st.y - 3; y--) {
                 BlockPos pos = new BlockPos(x, y, z);
                 if (!canBurnAt(level, pos)) continue;
-                if (!out.contains(pos.asLong())) {
+                if (!out.contains(pos.asLong()) && !(level.getBlockState(pos).getBlock() instanceof BaseFireBlock)) {
                     level.setBlock(pos, BaseFireBlock.getState(level, pos), 3);
                     out.add(pos.asLong());
                     LAST_AGE.put(pos.asLong(), 0);
@@ -214,7 +225,16 @@ public final class FireService {
         }
         noDutySince = 0;
 
-        if (cfg.incendies_actifs && !d.sites.isEmpty() && d.incidents.size() < Math.max(1, cfg.incendie_max_simultanes)) {
+        // Trop de blessés à prendre en charge : on calme le jeu (pas de nouvel incendie, ni propagation, ni reprise).
+        boolean over = overloaded(s, d, cfg, duty);
+        if (over != calm) {
+            calm = over;
+            for (ServerPlayer p : duty) tell(p, over
+                    ? "§e[Secours] Beaucoup de blessés à prendre en charge : plus de nouveaux incendies tant que la situation n'est pas calmée."
+                    : "§a[Secours] La situation est calmée : les incendies peuvent reprendre.");
+        }
+
+        if (!over && cfg.incendies_actifs && !d.sites.isEmpty() && d.incidents.size() < Math.max(1, cfg.incendie_max_simultanes)) {
             if (pendingStart != 0 && now >= pendingStart) {
                 pendingStart = 0;
                 start(s, null);
@@ -228,10 +248,45 @@ public final class FireService {
             }
         }
 
-        for (Incident inc : new ArrayList<>(d.incidents.values())) tickIncident(s, d, inc, now, cfg, duty);
+        for (Incident inc : new ArrayList<>(d.incidents.values())) tickIncident(s, d, inc, now, cfg, duty, over);
     }
 
-    private static void tickIncident(MinecraftServer s, SecoursData d, Incident inc, long now, SecoursConfig cfg, List<ServerPlayer> duty) {
+    /** Charge de soins : blessés à prendre en charge (un pompier blessé compte double) comparée au nombre de pompiers en service. */
+    private static boolean overloaded(MinecraftServer s, SecoursData d, SecoursConfig cfg, List<ServerPlayer> duty) {
+        if (!cfg.incendie_calme_actif) return false;
+        int load = 0;
+        for (ServerPlayer p : s.getPlayerList().getPlayers()) {
+            Injury j = d.peek(p.getUUID());
+            if (j == null) continue;
+            if (!(j.coma || j.bleeding || j.level >= cfg.incendie_calme_niveau_min)) continue;
+            load += duty.contains(p) ? 2 : 1;
+        }
+        return load >= Math.max(2, duty.size() * Math.max(1, cfg.incendie_blesses_par_pompier));
+    }
+
+    /** Foyers supplémentaires autour du site (propagation ou reprise). Renvoie ceux qui ont réellement pris. */
+    private static List<Long> igniteMore(ServerLevel level, Incident inc, SecoursConfig cfg, int wanted) {
+        Site st = new Site();
+        st.name = inc.site; st.dim = inc.dim; st.x = inc.x; st.y = inc.y; st.z = inc.z;
+        return ignite(level, st, Math.max(1, cfg.incendie_rayon) + cfg.incendie_propagation_rayon_bonus, wanted, 30);
+    }
+
+    /** Prime aux pompiers en service qui sont restés assez longtemps sur place. Source banque : « secours:prime-incendie ». */
+    private static void reward(MinecraftServer s, Incident inc, SecoursConfig cfg) {
+        long cents = SecoursConfig.cents(cfg.incendie_prime_euros);
+        Map<UUID, Integer> seen = PRESENCE.get(inc.id);
+        if (cents <= 0 || seen == null) return;
+        for (Map.Entry<UUID, Integer> en : seen.entrySet()) {
+            if (en.getValue() < cfg.incendie_prime_presence_secondes) continue;
+            ServerPlayer p = s.getPlayerList().getPlayer(en.getKey());
+            if (p == null || !SecoursService.onDuty(p)) continue;
+            if (MineNorth.bank().refund(s, p.getUUID(), cents, "secours:prime-incendie"))
+                tell(p, "§a[Secours] Prime d'intervention : " + SecoursService.money(cents) + " versés sur votre compte.");
+            else tell(p, "§e[Secours] Prime d'intervention non versée (pas de compte bancaire ou trésor insuffisant).");
+        }
+    }
+
+    private static void tickIncident(MinecraftServer s, SecoursData d, Incident inc, long now, SecoursConfig cfg, List<ServerPlayer> duty, boolean over) {
         ServerLevel level = level(s, inc.dim);
         long limit = inc.startMs + SecoursConfig.ms(Math.max(1, cfg.incendie_duree_max_minutes));
         if (level == null) { close(s, d, inc, null); return; }
@@ -243,7 +298,23 @@ public final class FireService {
             close(s, d, inc, "§c[Secours] L'incendie de " + inc.site + " n'a pas été maîtrisé à temps (le feu s'est éteint).");
             return;
         }
+        // Présence des pompiers en service sur les lieux (pour la prime).
+        double maxD2 = (double) cfg.incendie_prime_distance * cfg.incendie_prime_distance;
+        for (ServerPlayer p : duty) {
+            if (!dimOf(p).equals(inc.dim)) continue;
+            double dx = p.getX() - inc.x, dz = p.getZ() - inc.z;
+            if (dx * dx + dz * dz <= maxD2) PRESENCE.computeIfAbsent(inc.id, k -> new HashMap<>()).merge(p.getUUID(), 1, Integer::sum);
+        }
         boolean changed = false;
+        long activeUntil = inc.startMs + SecoursConfig.ms(cfg.incendie_duree_min_minutes);
+        // Propagation : tant que la durée minimale n'est pas écoulée et que tout va bien, de nouveaux foyers apparaissent.
+        if (!over && cfg.incendie_propagation_secondes > 0 && now < activeUntil && inc.fires.size() < cfg.incendie_foyers_max
+                && now >= NEXT_SPREAD.getOrDefault(inc.id, inc.startMs + cfg.incendie_propagation_secondes * 1000L)) {
+            List<Long> more = igniteMore(level, inc, cfg, Math.min(1 + RNG.nextInt(2), cfg.incendie_foyers_max - inc.fires.size()));
+            inc.fires.addAll(more);
+            NEXT_SPREAD.put(inc.id, now + cfg.incendie_propagation_secondes * 1000L);
+            if (!more.isEmpty()) changed = true;
+        }
         for (Long l : new ArrayList<>(inc.fires)) {
             BlockPos pos = BlockPos.of(l);
             if (!level.isLoaded(pos)) continue;
@@ -259,13 +330,30 @@ public final class FireService {
         }
         if (changed) d.setDirty();
         if (inc.fires.isEmpty()) {
+            // Éteint trop tôt : le feu reprend (sauf mode calme ou reprises épuisées).
+            if (!over && now < activeUntil && REKINDLES.getOrDefault(inc.id, 0) < cfg.incendie_reprises_max) {
+                Long at = REKINDLE_AT.get(inc.id);
+                if (at == null) { REKINDLE_AT.put(inc.id, now + 15_000L); return; }
+                if (now < at) return;
+                REKINDLE_AT.remove(inc.id);
+                List<Long> again = igniteMore(level, inc, cfg, 2 + RNG.nextInt(2));
+                if (!again.isEmpty()) {
+                    inc.fires.addAll(again);
+                    REKINDLES.merge(inc.id, 1, Integer::sum);
+                    d.setDirty();
+                    for (ServerPlayer p : duty) tell(p, "§c[Secours] Le feu reprend à " + inc.site + " ! Il reste des braises.");
+                    return;
+                }
+            }
             long minutes = Math.max(1, (now - inc.startMs) / 60_000L);
+            reward(s, inc, cfg);
             close(s, d, inc, "§a[Secours] Incendie maîtrisé à " + inc.site + " en " + minutes + " min. Bien joué !");
         }
     }
 
     private static void close(MinecraftServer s, SecoursData d, Incident inc, String message) {
         for (long f : inc.fires) LAST_AGE.remove(f);
+        NEXT_SPREAD.remove(inc.id); REKINDLE_AT.remove(inc.id); REKINDLES.remove(inc.id); PRESENCE.remove(inc.id);
         d.incidents.remove(inc.id);
         d.setDirty();
         for (ServerPlayer p : s.getPlayerList().getPlayers()) {

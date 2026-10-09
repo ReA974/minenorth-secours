@@ -121,7 +121,7 @@ public final class SecoursService {
         for (ServerPlayer p : s.getPlayerList().getPlayers()) if (onDuty(p)) return true;
         return false;
     }
-    private static String money(long cents) {
+    static String money(long cents) {
         long a = Math.abs(cents);
         return (a / 100) + (a % 100 == 0 ? "" : "," + String.format("%02d", a % 100)) + " €";
     }

@@ -60,6 +60,31 @@ public final class SecoursConfig {
     public int incendie_rayon = 2;
     /** Au bout de ce temps (minutes) le feu est coupé d'office, incendie raté. */
     public double incendie_duree_max_minutes = 30;
+    /** Durée minimale (minutes) : tant qu'elle n'est pas écoulée, un incendie éteint trop vite reprend (jusqu'à incendie_reprises_max fois). */
+    public double incendie_duree_min_minutes = 8;
+    /** Nombre de foyers au départ (tirage entre min et max) ; la propagation ne dépasse jamais le max. */
+    public int incendie_foyers_min = 8;
+    public int incendie_foyers_max = 14;
+    /** Pendant la durée minimale, 1 à 2 foyers apparaissent toutes les N secondes tant que le plafond n'est pas atteint (0 = pas de propagation). */
+    public int incendie_propagation_secondes = 45;
+    /** Les foyers de propagation peuvent apparaître jusqu'à rayon + ce bonus (blocs) autour du site. */
+    public int incendie_propagation_rayon_bonus = 2;
+    /** Nombre maximal de reprises de feu quand tous les foyers sont éteints avant la durée minimale. */
+    public int incendie_reprises_max = 3;
+
+    // --- prime quand l'incendie est maîtrisé (versée par la banque aux pompiers en service présents sur place ; 0 = aucune)
+    public double incendie_prime_euros = 250;
+    /** Distance (blocs) autour du site pour compter comme présent. */
+    public int incendie_prime_distance = 40;
+    /** Temps de présence minimal (secondes) pour toucher la prime. */
+    public int incendie_prime_presence_secondes = 30;
+
+    // --- mode calme : trop de blessés à soigner => plus de nouvel incendie, plus de propagation ni de reprise
+    public boolean incendie_calme_actif = true;
+    /** Blessé « à prendre en charge » = inconscient, qui saigne, ou blessure de ce niveau ou plus (1 légère, 2 moyenne, 3 grave). */
+    public int incendie_calme_niveau_min = 2;
+    /** Seuil = max(2, pompiers en service x ce nombre). Un pompier lui-même blessé compte double. */
+    public int incendie_blesses_par_pompier = 2;
 
     // --- facture envoyée au patient quand un secouriste le soigne (0 = gratuit)
     public double facture_soins_euros = 150;
@@ -162,6 +187,17 @@ public final class SecoursConfig {
         c.hemorragie_torse_multiplicateur = Math.max(1, c.hemorragie_torse_multiplicateur);
         c.hemorragie_intervalle_secondes = Math.max(1, c.hemorragie_intervalle_secondes);
         c.coma_coeurs_restants = Math.max(0.5, c.coma_coeurs_restants);
+        c.incendie_duree_min_minutes = Math.max(0, Math.min(c.incendie_duree_min_minutes, c.incendie_duree_max_minutes));
+        c.incendie_foyers_min = Math.max(1, c.incendie_foyers_min);
+        c.incendie_foyers_max = Math.max(c.incendie_foyers_min, c.incendie_foyers_max);
+        c.incendie_propagation_secondes = Math.max(0, c.incendie_propagation_secondes);
+        c.incendie_propagation_rayon_bonus = Math.max(0, c.incendie_propagation_rayon_bonus);
+        c.incendie_reprises_max = Math.max(0, c.incendie_reprises_max);
+        c.incendie_prime_euros = Math.max(0, c.incendie_prime_euros);
+        c.incendie_prime_distance = Math.max(5, c.incendie_prime_distance);
+        c.incendie_prime_presence_secondes = Math.max(0, c.incendie_prime_presence_secondes);
+        c.incendie_calme_niveau_min = Math.max(1, Math.min(3, c.incendie_calme_niveau_min));
+        c.incendie_blesses_par_pompier = Math.max(1, c.incendie_blesses_par_pompier);
         if (ok) {
             try {
                 Files.createDirectories(f.getParent());
