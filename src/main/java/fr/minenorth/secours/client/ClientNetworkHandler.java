@@ -34,6 +34,10 @@ public final class ClientNetworkHandler {
         else mc.setScreen(new TabletScreen(p));
     }
 
+    public static void defib(ModNetwork.DefibStartPacket p) {
+        Minecraft.getInstance().setScreen(new DefibScreen(p.seed(), p.beats()));
+    }
+
     public static void clinic(ModNetwork.ClinicPacket p) {
         Minecraft.getInstance().setScreen(new ClinicScreen(p));
     }

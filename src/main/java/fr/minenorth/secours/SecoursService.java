@@ -85,6 +85,11 @@ public final class SecoursService {
     /** Soin en cours par un joueur (clé = celui qui soigne). */
     private record Care(UUID target, int type, long startMs, long endMs) {}
     private static final Map<UUID, Care> CARES = new HashMap<>();
+    /** Mini-jeu de défibrillation en cours (clé = secouriste). */
+    private record DefibSession(UUID target, long seed, int beats, long startMs) {}
+    private static final Map<UUID, DefibSession> DEFIBS = new HashMap<>();
+    /** Une session ouverte depuis plus longtemps que ça est abandonnée. */
+    private static final long DEFIB_TIMEOUT_MS = 60_000L;
     /** Transport : celui qui porte -> le blessé porté. */
     private static final Map<UUID, UUID> CARRY = new HashMap<>();
     /** Blessés que le mod est en train de faire descendre lui-même (sinon un inconscient ne peut pas descendre). */
@@ -436,9 +441,44 @@ public final class SecoursService {
         String err = careError(SecoursData.get(rescuer.server).peek(target.getUUID()), type);
         if (err != null) { bar(rescuer, "§c" + (rescuer == target ? err.replace("Cette personne n'a", "Vous n'avez").replace("cette blessure", "votre blessure") : err)); return false; }
         long now = System.currentTimeMillis();
+        if (type == DEFIB) {
+            long seed = java.util.concurrent.ThreadLocalRandom.current().nextLong();
+            int beats = SecoursConfig.get().defib_battements;
+            DEFIBS.put(rescuer.getUUID(), new DefibSession(target.getUUID(), seed, beats, now));
+            ModNetwork.send(rescuer, new ModNetwork.DefibStartPacket(seed, beats));
+            bar(target, "§b" + display(rescuer.server, rescuer.getUUID()) + " prépare le défibrillateur, ne bougez pas.");
+            return true;
+        }
         CARES.put(rescuer.getUUID(), new Care(target.getUUID(), type, now, now + Math.max(1, o.secondes) * 1000L));
         if (rescuer != target) bar(target, "§b" + display(rescuer.server, rescuer.getUUID()) + " vous soigne, ne bougez pas.");
         return true;
+    }
+
+    /** Résultat du mini-jeu envoyé par le client : la précision est recalculée ici à partir du seed. */
+    public static void defibResult(ServerPlayer rescuer, ModNetwork.DefibResultPacket packet) {
+        DefibSession ses = DEFIBS.remove(rescuer.getUUID());
+        if (ses == null || packet.cancelled()) return;
+        ServerPlayer target = rescuer.server.getPlayerList().getPlayer(ses.target());
+        double max = SecoursConfig.get().distance_soin;
+        if (target == null || rescuer.level() != target.level() || rescuer.distanceToSqr(target) > max * max || careType(rescuer.getMainHandItem()) != DEFIB) {
+            bar(rescuer, "§cRéanimation interrompue : restez à côté, le défibrillateur en main.");
+            return;
+        }
+        double acc = DefibScore.evaluate(DefibScore.beats(ses.seed(), ses.beats()), packet.taps(), System.currentTimeMillis() - ses.startMs());
+        if (acc >= SecoursConfig.get().defib_precision_min) finishCare(rescuer, target, DEFIB);
+        else bar(rescuer, "§cChoc raté (précision " + Math.round(acc * 100) + " %). Recommencez.");
+    }
+
+    private static void tickDefibs(MinecraftServer s, SecoursConfig cfg, long now) {
+        for (Iterator<Map.Entry<UUID, DefibSession>> it = DEFIBS.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, DefibSession> en = it.next();
+            DefibSession ses = en.getValue();
+            ServerPlayer rescuer = s.getPlayerList().getPlayer(en.getKey()), target = s.getPlayerList().getPlayer(ses.target());
+            double max = cfg.distance_soin;
+            boolean valid = rescuer != null && target != null && now - ses.startMs() < DEFIB_TIMEOUT_MS && isComa(target) && !isComa(rescuer)
+                    && rescuer.level() == target.level() && rescuer.distanceToSqr(target) <= max * max;
+            if (!valid) it.remove();
+        }
     }
 
     private static void finishCare(ServerPlayer rescuer, ServerPlayer target, int type) {
@@ -624,6 +664,7 @@ public final class SecoursService {
         boolean slowSync = s.getTickCount() % 100 == 0;
 
         tickCares(s, cfg, now);
+        tickDefibs(s, cfg, now);
         tickClinics(s, cfg, d, now);
 
         for (ServerPlayer p : new ArrayList<>(s.getPlayerList().getPlayers())) {
@@ -954,7 +995,7 @@ public final class SecoursService {
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent e) {
         UUID id = e.getEntity().getUUID();
-        TABLETS.remove(id); HOSPITAL_RESPAWN.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); FALLS.remove(id); NEXT_BLEED.remove(id);
+        TABLETS.remove(id); HOSPITAL_RESPAWN.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); DEFIBS.remove(id); DEFIBS.values().removeIf(d -> d.target().equals(id)); FALLS.remove(id); NEXT_BLEED.remove(id);
         if (e.getEntity() instanceof ServerPlayer leaving) {
             SecoursData.get(leaving.server).onDuty.remove(id);
             FireService.onLogout(id);

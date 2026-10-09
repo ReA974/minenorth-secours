@@ -23,7 +23,7 @@ public final class ModNetwork {
     public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8;
     public static final UUID NONE = new UUID(0, 0);
 
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthSecours.MOD_ID, "network"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
     private static int id = 0;
@@ -34,6 +34,8 @@ public final class ModNetwork {
         CHANNEL.registerMessage(id++, ClinicPacket.class, ClinicPacket::encode, ClinicPacket::decode, ClinicPacket::handle);
         CHANNEL.registerMessage(id++, ActionPacket.class, ActionPacket::encode, ActionPacket::decode, ActionPacket::handle);
         CHANNEL.registerMessage(id++, ComaListPacket.class, ComaListPacket::encode, ComaListPacket::decode, ComaListPacket::handle);
+        CHANNEL.registerMessage(id++, DefibStartPacket.class, DefibStartPacket::encode, DefibStartPacket::decode, DefibStartPacket::handle);
+        CHANNEL.registerMessage(id++, DefibResultPacket.class, DefibResultPacket::encode, DefibResultPacket::decode, DefibResultPacket::handle);
     }
 
     public static void send(ServerPlayer p, Object packet) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), packet); }
@@ -45,6 +47,38 @@ public final class ModNetwork {
         static void handle(ComaListPacket p, Supplier<NetworkEvent.Context> c) {
             c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                     () -> () -> fr.minenorth.secours.client.ClientNetworkHandler.comaList(p)));
+            c.get().setPacketHandled(true);
+        }
+    }
+
+    /** Ouvre le mini-jeu du défibrillateur chez le secouriste. Les battements se déduisent du seed (DefibScore.beats). */
+    public record DefibStartPacket(long seed, int beats) {
+        static void encode(DefibStartPacket p, FriendlyByteBuf b) { b.writeLong(p.seed); b.writeVarInt(p.beats); }
+        static DefibStartPacket decode(FriendlyByteBuf b) { return new DefibStartPacket(b.readLong(), b.readVarInt()); }
+        static void handle(DefibStartPacket p, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> fr.minenorth.secours.client.ClientNetworkHandler.defib(p)));
+            c.get().setPacketHandled(true);
+        }
+    }
+
+    /** Fin du mini-jeu : frappes en ms depuis l'ouverture de l'écran, ou abandon. Le serveur recalcule la précision. */
+    public record DefibResultPacket(boolean cancelled, long[] taps) {
+        public static final int MAX_TAPS = 64;
+        static void encode(DefibResultPacket p, FriendlyByteBuf b) {
+            b.writeBoolean(p.cancelled); b.writeVarInt(p.taps.length);
+            for (long t : p.taps) b.writeVarLong(t);
+        }
+        static DefibResultPacket decode(FriendlyByteBuf b) {
+            boolean cancelled = b.readBoolean();
+            int n = b.readVarInt();
+            if (n < 0 || n > MAX_TAPS) throw new IllegalArgumentException("trop de frappes");
+            long[] taps = new long[n];
+            for (int i = 0; i < n; i++) taps[i] = b.readVarLong();
+            return new DefibResultPacket(cancelled, taps);
+        }
+        static void handle(DefibResultPacket p, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> { ServerPlayer sp = c.get().getSender(); if (sp != null) SecoursService.defibResult(sp, p); });
             c.get().setPacketHandled(true);
         }
     }
