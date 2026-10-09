@@ -113,6 +113,18 @@ public final class SecoursService {
     public static boolean onDuty(ServerPlayer p) {
         return rank(p) >= 0 && SecoursData.get(p.server).onDuty.contains(p.getUUID());
     }
+    /** Prend ou quitte le service (tablette ou accueil). Renvoie le nouvel état ; inchangé si le joueur n'est pas secouriste. */
+    public static boolean setDuty(ServerPlayer p, boolean on) {
+        if (rank(p) < 0) return false;
+        SecoursData d = SecoursData.get(p.server);
+        boolean was = d.onDuty.contains(p.getUUID());
+        if (was == on) return on;
+        if (on) d.onDuty.add(p.getUUID()); else d.onDuty.remove(p.getUUID());
+        FireService.onDutyChanged(p, on);
+        tellSecours(p.server, "§b[Secours] " + display(p.server, p.getUUID()) + (on ? " prend son service." : " quitte son service."));
+        if (!on) tell(p, "§eVous avez quitté votre service.");
+        return on;
+    }
     /** Les alertes ne vont qu'aux secouristes en service. */
     static void tellSecours(MinecraftServer s, String text) {
         for (ServerPlayer p : s.getPlayerList().getPlayers()) if (onDuty(p)) tell(p, text);
@@ -939,11 +951,7 @@ public final class SecoursService {
             case ModNetwork.A_ROSTER -> { if (rank == SecoursData.CHEF) sendRoster(p, "", true); }
             case ModNetwork.A_FILE -> sendFile(p, k.a());
             case ModNetwork.A_DUTY -> {
-                boolean now = !d.onDuty.remove(p.getUUID());
-                if (now) d.onDuty.add(p.getUUID());
-                FireService.onDutyChanged(p, now);
-                tellSecours(s, "§b[Secours] " + display(s, p.getUUID()) + (now ? " prend son service." : " quitte son service."));
-                if (!now) tell(p, "§eVous avez quitté votre service.");
+                boolean now = setDuty(p, !onDuty(p));
                 sendAlerts(p, now ? "Vous êtes en service : vous recevez les alertes." : "Vous êtes hors service.", true);
             }
             case ModNetwork.A_DISPATCH -> {
