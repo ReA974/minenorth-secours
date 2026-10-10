@@ -12,11 +12,14 @@ public final class ClientState {
     public static final java.util.Set<java.util.UUID> comaPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     public static boolean customRender = true;
     public static boolean bleeding, coma;
+    /** Au moins un secouriste / pompier en service (serveur). */
+    public static boolean rescuers;
     public static String dispatch = "";
     private static int healSeconds, comaSeconds, careSeconds;
     private static long receivedAt;
 
-    public static void set(int lvl, int heal, boolean bleed, boolean isComa, int comaLeft, String unit, int care, int hitZones) {
+    public static void set(int lvl, int heal, boolean bleed, boolean isComa, int comaLeft, String unit, int care, int hitZones, boolean rescuersOn) {
+        rescuers = rescuersOn;
         zones = hitZones;
         level = lvl; healSeconds = heal; bleeding = bleed; coma = isComa; comaSeconds = comaLeft; dispatch = unit == null ? "" : unit;
         careSeconds = care; receivedAt = System.currentTimeMillis();

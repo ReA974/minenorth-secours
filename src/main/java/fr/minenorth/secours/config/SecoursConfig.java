@@ -133,6 +133,12 @@ public final class SecoursConfig {
     public String coma_pose = "SLEEPING";
     /** true : un inconscient peut être tué par n'importe quel dégât et se réveille à l'hôpital. false : il est invulnérable. */
     public boolean coma_mortel = true;
+    /**
+     * true (conseillé) : le coma n'est mortel que s'il n'y a AUCUN secouriste en service. Tant qu'il y en a, l'inconscient est invulnérable
+     * (pas d'écran de mort, donc pas de bouton « Réapparaître ») et doit attendre les secours ou la fin du délai de coma.
+     * Sans secours en service, il peut se réveiller à l'hôpital avec la touche prévue (HUD) ou mourir et réapparaître.
+     */
+    public boolean coma_mortel_sans_secours_seulement = true;
     /** Mini-jeu du défibrillateur : nombre de battements et précision minimale (0 à 1) pour réussir. */
     public int defib_battements = 12;
     public double defib_precision_min = 0.7;

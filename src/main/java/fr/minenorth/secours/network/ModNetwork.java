@@ -23,7 +23,7 @@ public final class ModNetwork {
     public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8;
     public static final UUID NONE = new UUID(0, 0);
 
-    private static final String PROTOCOL = "3";
+    private static final String PROTOCOL = "4";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthSecours.MOD_ID, "network"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
     private static int id = 0;
@@ -36,6 +36,7 @@ public final class ModNetwork {
         CHANNEL.registerMessage(id++, ComaListPacket.class, ComaListPacket::encode, ComaListPacket::decode, ComaListPacket::handle);
         CHANNEL.registerMessage(id++, DefibStartPacket.class, DefibStartPacket::encode, DefibStartPacket::decode, DefibStartPacket::handle);
         CHANNEL.registerMessage(id++, DefibResultPacket.class, DefibResultPacket::encode, DefibResultPacket::decode, DefibResultPacket::handle);
+        CHANNEL.registerMessage(id++, WakePacket.class, WakePacket::encode, WakePacket::decode, WakePacket::handle);
     }
 
     public static void send(ServerPlayer p, Object packet) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), packet); }
@@ -83,15 +84,25 @@ public final class ModNetwork {
         }
     }
 
+    /** Touche « se réveiller à l'hôpital » (inconscient, aucun secouriste en service). Le serveur revérifie tout. */
+    public record WakePacket() {
+        static void encode(WakePacket p, FriendlyByteBuf b) { }
+        static WakePacket decode(FriendlyByteBuf b) { return new WakePacket(); }
+        static void handle(WakePacket p, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> { ServerPlayer sp = c.get().getSender(); if (sp != null) SecoursService.wake(sp); });
+            c.get().setPacketHandled(true);
+        }
+    }
+
     /** État de santé du joueur lui-même : sert à l'affichage (HUD) et à la pose au sol. Durées en secondes restantes. */
     public record StatePacket(int level, int healSeconds, boolean bleeding, boolean coma, int comaSeconds, String dispatch,
-                              int careSeconds, String pose, int zones) {
+                              int careSeconds, String pose, int zones, boolean rescuers) {
         static void encode(StatePacket p, FriendlyByteBuf b) {
             b.writeVarInt(p.level); b.writeVarInt(p.healSeconds); b.writeBoolean(p.bleeding); b.writeBoolean(p.coma);
-            b.writeVarInt(p.comaSeconds); b.writeUtf(p.dispatch); b.writeVarInt(p.careSeconds); b.writeUtf(p.pose); b.writeVarInt(p.zones);
+            b.writeVarInt(p.comaSeconds); b.writeUtf(p.dispatch); b.writeVarInt(p.careSeconds); b.writeUtf(p.pose); b.writeVarInt(p.zones); b.writeBoolean(p.rescuers);
         }
         static StatePacket decode(FriendlyByteBuf b) {
-            return new StatePacket(b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readBoolean(), b.readVarInt(), b.readUtf(), b.readVarInt(), b.readUtf(), b.readVarInt());
+            return new StatePacket(b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readBoolean(), b.readVarInt(), b.readUtf(), b.readVarInt(), b.readUtf(), b.readVarInt(), b.readBoolean());
         }
         static void handle(StatePacket p, Supplier<NetworkEvent.Context> c) {
             c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,

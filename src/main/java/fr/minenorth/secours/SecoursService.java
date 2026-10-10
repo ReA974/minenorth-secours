@@ -122,6 +122,7 @@ public final class SecoursService {
         if (on) d.onDuty.add(p.getUUID()); else d.onDuty.remove(p.getUUID());
         FireService.onDutyChanged(p, on);
         tellSecours(p.server, "§b[Secours] " + display(p.server, p.getUUID()) + (on ? " prend son service." : " quitte son service."));
+        resyncComa(p.server);
         if (!on) tell(p, "§eVous avez quitté votre service.");
         return on;
     }
@@ -129,6 +130,28 @@ public final class SecoursService {
     static void tellSecours(MinecraftServer s, String text) {
         for (ServerPlayer p : s.getPlayerList().getPlayers()) if (onDuty(p)) tell(p, text);
     }
+    /** Le coma est-il mortel en ce moment ? (config, et aucun secouriste en service si coma_mortel_sans_secours_seulement) */
+    private static boolean comaLethal(MinecraftServer s) {
+        SecoursConfig cfg = SecoursConfig.get();
+        return cfg.coma_mortel && !(cfg.coma_mortel_sans_secours_seulement && secoursOnline(s));
+    }
+
+    /** Remet à jour l'écran des inconscients (secours en service ou non) quand la situation change. */
+    private static void resyncComa(MinecraftServer s) {
+        for (ServerPlayer q : s.getPlayerList().getPlayers()) if (isComa(q)) sync(q);
+    }
+
+    /** Touche « se réveiller à l'hôpital » : seulement pour un inconscient, et seulement s'il n'y a aucun secouriste en service. */
+    public static void wake(ServerPlayer p) {
+        if (!isComa(p)) return;
+        if (secoursOnline(p.server)) {
+            bar(p, "§cDes secours sont en service : attendez-les ou la fin du délai.");
+            sync(p);
+            return;
+        }
+        hospital(p);
+    }
+
     private static boolean secoursOnline(MinecraftServer s) {
         for (ServerPlayer p : s.getPlayerList().getPlayers()) if (onDuty(p)) return true;
         return false;
@@ -177,9 +200,10 @@ public final class SecoursService {
         long now = System.currentTimeMillis();
         Clinic c = CLINICS.get(p.getUUID());
         int care = c == null ? 0 : (int) Math.max(0, (c.endMs() - now + 999) / 1000);
-        if (j == null) { ModNetwork.send(p, new ModNetwork.StatePacket(0, 0, false, false, 0, "", care, "", 0)); return; }
+        boolean rescuers = secoursOnline(p.server);
+        if (j == null) { ModNetwork.send(p, new ModNetwork.StatePacket(0, 0, false, false, 0, "", care, "", 0, rescuers)); return; }
         ModNetwork.send(p, new ModNetwork.StatePacket(j.level, j.healAt > 0 ? (int) Math.max(0, (j.healAt - now) / 1000) : 0, j.bleeding,
-                j.coma, j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, care, SecoursConfig.get().coma_rendu_allonge ? "" : comaPose().name(), j.zones));
+                j.coma, j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, care, SecoursConfig.get().coma_rendu_allonge ? "" : comaPose().name(), j.zones, rescuers));
     }
 
     /** Applique le ralentissement et la pose correspondant à l'état du joueur. Sans effet si rien n'a changé. */
@@ -310,7 +334,7 @@ public final class SecoursService {
     /** Un joueur inconscient ne peut plus être frappé. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void attacked(LivingAttackEvent e) {
-        if (e.getEntity() instanceof ServerPlayer p && !SecoursConfig.get().coma_mortel && isComa(p) && !e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) e.setCanceled(true);
+        if (e.getEntity() instanceof ServerPlayer p && !comaLethal(p.server) && isComa(p) && !e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) e.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -320,7 +344,7 @@ public final class SecoursService {
         SecoursConfig cfg = SecoursConfig.get();
         SecoursData d = SecoursData.get(p.server);
         Injury j = d.injury(p.getUUID());
-        if (j.coma) { if (!cfg.coma_mortel) e.setCanceled(true); return; }
+        if (j.coma) { if (!comaLethal(p.server)) e.setCanceled(true); return; }
 
         boolean isFall = e.getSource().is(DamageTypeTags.IS_FALL);
         boolean gun = cfg.hemorragie_par_balle && isGun(e.getSource());

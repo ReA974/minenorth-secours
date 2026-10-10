@@ -38,9 +38,14 @@ public final class Hud {
             g.pose().scale(2f, 2f, 1f);
             centered(g, font, "VOUS ÊTES INCONSCIENT", w / 4, y / 2, MineNorthStyle.ALERT);
             g.pose().popPose();
-            centered(g, font, "Un pompier ou le SAMU doit venir vous réanimer.", w / 2, y + 26, MineNorthStyle.TEXT);
-            if (ClientState.dispatch.isEmpty()) centered(g, font, "En attente d'une unité de secours…", w / 2, y + 42, MineNorthStyle.MUTED);
-            else centered(g, font, "Unité en route : " + ClientState.dispatch, w / 2, y + 42, MineNorthStyle.OK);
+            if (ClientState.rescuers) {
+                centered(g, font, "Un pompier ou le SAMU doit venir vous réanimer.", w / 2, y + 26, MineNorthStyle.TEXT);
+                if (ClientState.dispatch.isEmpty()) centered(g, font, "En attente d'une unité de secours…", w / 2, y + 42, MineNorthStyle.MUTED);
+                else centered(g, font, "Unité en route : " + ClientState.dispatch, w / 2, y + 42, MineNorthStyle.OK);
+            } else {
+                centered(g, font, "Aucun secours en service.", w / 2, y + 26, MineNorthStyle.TEXT);
+                centered(g, font, "Appuyez sur [" + ClientKeys.wakeKeyName() + "] pour vous réveiller à l'hôpital.", w / 2, y + 42, MineNorthStyle.OK);
+            }
             centered(g, font, "Réveil à l'hôpital dans " + ClientState.clock(ClientState.comaLeft()), w / 2, y + 58, MineNorthStyle.WARN);
             return;
         }
