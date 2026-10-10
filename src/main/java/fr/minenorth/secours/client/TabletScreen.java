@@ -98,22 +98,26 @@ public class TabletScreen extends Screen {
         int pages = Math.max(1, (list.size() + rows - 1) / rows);
         page = Math.max(0, Math.min(pages - 1, page));
         if (!v.onDuty()) label("Vous êtes hors service : vous ne recevez pas les alertes et ne pouvez pas soigner.", x, top + H - 50, MineNorthStyle.WARN, w);
-        if (list.isEmpty()) label("Aucune alerte : personne n'est inconscient, aucun incendie.", x, y0 + 6, MineNorthStyle.OK, w);
+        if (list.isEmpty()) label("Aucune alerte : personne n'est inconscient, aucun incendie, aucun appel d'urgence.", x, y0 + 6, MineNorthStyle.OK, w);
         for (int i = 0; i < rows; i++) {
             int idx = page * rows + i;
             if (idx >= list.size()) break;
             ModNetwork.Alert a = list.get(idx);
             int y = y0 + i * 26;
             boolean fire = a.kind() == ModNetwork.Alert.FIRE;
-            int color = fire ? 0xFFFF8A33 : a.coma() ? MineNorthStyle.ALERT : MineNorthStyle.WARN;
+            boolean call = a.kind() == ModNetwork.Alert.CALL;
+            int color = call ? 0xFF4FC3F7 : fire ? 0xFFFF8A33 : a.coma() ? MineNorthStyle.ALERT : MineNorthStyle.WARN;
             card(x, y, w, 24, color);
             label(a.name(), x + 8, y + 3, MineNorthStyle.WHITE, 150);
-            String state = fire ? "INCENDIE • à maîtriser avant " + ClientState.clock(a.secondsLeft()) : a.coma() ? "INCONSCIENT • hôpital dans " + ClientState.clock(a.secondsLeft()) : "BLESSURE GRAVE";
+            String state = call ? "APPEL 18 • il y a " + ClientState.clock(a.secondsLeft()) + (a.info().isBlank() ? "" : " • " + a.info())
+                    : fire ? "INCENDIE • à maîtriser avant " + ClientState.clock(a.secondsLeft()) : a.coma() ? "INCONSCIENT • hôpital dans " + ClientState.clock(a.secondsLeft()) : "BLESSURE GRAVE";
             String shot = a.zones() != 0 ? " • balle : " + fr.minenorth.secours.compat.TaczCompat.describe(a.zones()) : "";
             label(state + shot + (a.bleeding() ? " • hémorragie" : ""), x + 8, y + 14, color, 290);
             String where = a.x() + " " + a.y() + " " + a.z() + (a.distance() >= 0 ? "  (" + a.distance() + " m)" : "  (autre dimension)");
             label(where, x + 164, y + 3, MineNorthStyle.TEXT, 130);
-            if (fire) {
+            if (call) {
+                btn(x + w - 82, y + 4, 78, 16, "GUIDER", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
+            } else if (fire) {
                 btn(x + w - 82, y + 4, 78, 16, "J'Y VAIS", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
                 if (!a.dispatch().isEmpty()) label("En route : " + a.dispatch(), x + 300, y + 3, MineNorthStyle.OK, w - 390);
             } else if (a.dispatch().isEmpty()) {

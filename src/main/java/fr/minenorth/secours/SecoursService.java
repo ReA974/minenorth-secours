@@ -903,18 +903,26 @@ public final class SecoursService {
             int dist = q.level() == p.level() ? (int) Math.sqrt(q.distanceToSqr(p)) : -1;
             out.add(new ModNetwork.Alert(q.getUUID(), display(s, q.getUUID()), j.coma, j.level, j.bleeding,
                     q.blockPosition().getX(), q.blockPosition().getY(), q.blockPosition().getZ(), dist,
-                    j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, j.zones, ModNetwork.Alert.INJURY));
+                    j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, j.zones, ModNetwork.Alert.INJURY, ""));
         }
         if (onDuty(p)) {
             for (SecoursData.Incident inc : d.incidents.values()) {
                 int dist = inc.dim.equals(p.level().dimension().location().toString()) ? (int) Math.sqrt(p.distanceToSqr(inc.x + 0.5, inc.y, inc.z + 0.5)) : -1;
                 long left = inc.startMs + SecoursConfig.ms(SecoursConfig.get().incendie_duree_max_minutes) - now;
                 out.add(new ModNetwork.Alert(inc.id, "Incendie : " + inc.site, false, 0, false, inc.x, inc.y, inc.z, dist,
-                        (int) Math.max(0, left / 1000), inc.dispatch, 0, ModNetwork.Alert.FIRE));
+                        (int) Math.max(0, left / 1000), inc.dispatch, 0, ModNetwork.Alert.FIRE, ""));
+            }
+            // appels d'urgence passés depuis le téléphone (urgence 18) : secondsLeft = ancienneté de l'appel
+            for (fr.minenorth.api.EmergencyCall c : fr.minenorth.api.MineNorth.calls().activeCalls(s, fr.minenorth.api.EmergencyCall.EMS)) {
+                int dist = c.dim().equals(p.level().dimension().location().toString()) ? (int) Math.sqrt(p.distanceToSqr(c.x() + 0.5, c.y(), c.z() + 0.5)) : -1;
+                out.add(new ModNetwork.Alert(ModNetwork.Alert.callId(c.id()), c.label() + " : " + c.caller(), false, 0, false, c.x(), c.y(), c.z(), dist,
+                        c.ageSeconds(), "", 0, ModNetwork.Alert.CALL, c.description()));
             }
         }
         // Inconscients d'abord, puis ceux à qui il reste le moins de temps.
-        out.sort(Comparator.comparing((ModNetwork.Alert a) -> !a.coma()).thenComparingInt(ModNetwork.Alert::secondsLeft));
+        // Appels d'urgence ensuite (les plus anciens d'abord : secondsLeft = ancienneté).
+        out.sort(Comparator.comparingInt((ModNetwork.Alert a) -> a.coma() ? 0 : a.kind() == ModNetwork.Alert.CALL ? 1 : 2)
+                .thenComparingInt(a -> a.kind() == ModNetwork.Alert.CALL ? -a.secondsLeft() : a.secondsLeft()));
         ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_ALERTS, rank(p), msg, ok, onDuty(p), out, List.of(), "", List.of()));
     }
 
@@ -979,6 +987,17 @@ public final class SecoursService {
                 sendAlerts(p, now ? "Vous êtes en service : vous recevez les alertes." : "Vous êtes hors service.", true);
             }
             case ModNetwork.A_DISPATCH -> {
+                if (ModNetwork.Alert.isCall(k.target())) {   // appel d'urgence du téléphone : guidage sur la carte
+                    if (!onDuty(p)) { sendAlerts(p, "Prenez votre service pour intervenir.", false); return; }
+                    long callId = k.target().getLeastSignificantBits();
+                    fr.minenorth.api.EmergencyCall call = fr.minenorth.api.MineNorth.calls().activeCalls(s, fr.minenorth.api.EmergencyCall.EMS)
+                            .stream().filter(c -> c.id() == callId).findFirst().orElse(null);
+                    if (call == null) { sendAlerts(p, "Cet appel n'est plus actif.", false); return; }
+                    fr.minenorth.secours.compat.MapBridge.set(p, "Appel #" + call.id(), call.dim(), call.x(), call.y(), call.z(), 0xE53935, true);
+                    tellSecours(s, "§b[Secours] " + display(s, p.getUUID()) + " se rend à l'appel de " + call.caller() + ".");
+                    sendAlerts(p, "Guidage activé vers l'appel de " + call.caller() + (fr.minenorth.secours.compat.MapBridge.available() ? "." : " (carte absente)."), true);
+                    return;
+                }
                 SecoursData.Incident fire = d.incidents.get(k.target());
                 if (fire != null) {
                     if (!onDuty(p)) { sendAlerts(p, "Prenez votre service pour intervenir.", false); return; }
