@@ -23,19 +23,14 @@ public final class ModItems {
 
     /** Onglet « Secours MineNorth » du menu créatif. */
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MineNorthSecours.MOD_ID);
-    public static final RegistryObject<CreativeModeTab> TAB = TABS.register("secours", () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.minenorthsecours"))
-            .icon(() -> new ItemStack(TABLET.get()))
-            .displayItems((params, out) -> {
+    public static final net.minecraft.world.item.CreativeModeTab.DisplayItemsGenerator TAB_ITEMS = (params, out) -> {
                 out.accept(TABLET.get());
                 out.accept(BANDAGE_ITEM.get());
                 out.accept(TROUSSE_ITEM.get());
                 out.accept(DEFIB_ITEM.get());
-            })
-            .build());
+            };
 
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
-        TABS.register(modBus);
     }
 }
