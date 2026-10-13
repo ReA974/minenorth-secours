@@ -143,6 +143,11 @@ public final class SecoursConfig {
     public int defib_battements = 12;
     public double defib_precision_min = 0.7;
     public double facture_hopital_euros = 500;
+    /** Réveil à l'hôpital : le joueur ne peut pas s'éloigner de plus de hopital_rayon_blocs du point pendant cette durée. */
+    public double hopital_duree_minutes = 5;
+    public double hopital_rayon_blocs = 20;
+    /** Mort avec une hémorragie grave : réveil aux urgences, immobile pendant cette durée, soigné par l'hôpital. */
+    public double urgences_duree_minutes = 10;
 
     // --- PNJ de soins
     public double pnj_prix_legere_euros = 100;

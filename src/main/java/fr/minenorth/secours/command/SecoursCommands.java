@@ -19,7 +19,8 @@ import net.minecraftforge.fml.common.Mod;
  *   /reanimer <joueur>           réanime un joueur inconscient
  *   /retirerblessures <joueur>   retire toutes ses blessures (et le réveille)
  *   /secours grade <joueur> <chef|medecin|secouriste|aucun>
- *   /secours tablette <joueur> | /secours hopital | /secours reload
+ *   /secours tablette <joueur> | /secours reload
+ *   /secours hopital|urgences [ajouter <nom> | supprimer <nom> | liste]   points de réveil
  */
 @Mod.EventBusSubscriber
 public final class SecoursCommands {
@@ -69,13 +70,26 @@ public final class SecoursCommands {
                                         .executes(x -> say(x.getSource(), FireService.start(x.getSource().getServer(), com.mojang.brigadier.arguments.StringArgumentType.getString(x, "nom"))))))
                         .then(Commands.literal("eteindre").executes(x -> say(x.getSource(),
                                 FireService.closeAll(x.getSource().getServer(), SecoursData.get(x.getSource().getServer()), "§e[Secours] Incendie annulé par un administrateur.") + " incendie(s) éteint(s)."))))
-                .then(Commands.literal("hopital").executes(c -> say(c.getSource(), SecoursService.setHospital(c.getSource().getPlayerOrException()))))
+                .then(spawnCommand("hopital", false))
+                .then(spawnCommand("urgences", true))
                 .then(Commands.literal("reload").executes(c -> {
                     boolean ok = SecoursConfig.load();
                     c.getSource().sendSystemMessage(Component.literal(ok ? "§aConfiguration des secours rechargée."
                             : "§cFichier minenorth_secours.json illisible : ancienne configuration conservée."));
                     return ok ? 1 : 0;
                 })));
+    }
+
+    /** /secours hopital|urgences [ajouter <nom> | supprimer <nom> | liste] : points de réveil. Sans argument : ajoute un point au nom automatique. */
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> spawnCommand(String literal, boolean urgences) {
+        var word = com.mojang.brigadier.arguments.StringArgumentType.word();
+        return Commands.literal(literal)
+                .executes(c -> say(c.getSource(), SecoursService.addSpawn(c.getSource().getPlayerOrException(), urgences, null)))
+                .then(Commands.literal("ajouter").then(Commands.argument("nom", word).executes(c -> say(c.getSource(),
+                        SecoursService.addSpawn(c.getSource().getPlayerOrException(), urgences, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nom"))))))
+                .then(Commands.literal("supprimer").then(Commands.argument("nom", word).executes(c -> say(c.getSource(),
+                        SecoursService.removeSpawn(c.getSource().getServer(), urgences, com.mojang.brigadier.arguments.StringArgumentType.getString(c, "nom"))))))
+                .then(Commands.literal("liste").executes(c -> say(c.getSource(), SecoursService.listSpawns(c.getSource().getServer(), urgences))));
     }
 
     private static String addSite(ServerPlayer p, String name) {
