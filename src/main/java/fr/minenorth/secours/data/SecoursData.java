@@ -65,9 +65,45 @@ public class SecoursData extends SavedData {
         while (list.size() > 60) list.remove(0);
         setDirty();
     }
-    public boolean hasHospital;
-    public String hospitalDim = "";
-    public double hx, hy, hz;
+    /** Point de réveil (hôpital ou urgences). */
+    public static final class Spawn {
+        public String name = "", dim = "";
+        public double x, y, z;
+    }
+
+    /** Joueur retenu après un réveil : aux urgences il est immobile, à l'hôpital il reste dans un rayon autour du point. */
+    public static final class Hold {
+        public boolean urgent;
+        public long endMs;
+        public String spawn = "", dim = "";
+        public double x, y, z;
+    }
+
+    public final Map<String, Spawn> hospitals = new LinkedHashMap<>();
+    public final Map<String, Spawn> urgences = new LinkedHashMap<>();
+    public final Map<UUID, Hold> holds = new LinkedHashMap<>();
+
+    private static void loadSpawns(CompoundTag tag, String key, Map<String, Spawn> into) {
+        ListTag l = tag.getList(key, Tag.TAG_COMPOUND);
+        for (int i = 0; i < l.size(); i++) {
+            CompoundTag t = l.getCompound(i);
+            Spawn s = new Spawn();
+            s.name = t.getString("name"); s.dim = t.getString("dim");
+            s.x = t.getDouble("x"); s.y = t.getDouble("y"); s.z = t.getDouble("z");
+            into.put(s.name.toLowerCase(java.util.Locale.ROOT), s);
+        }
+    }
+
+    private static ListTag saveSpawns(Map<String, Spawn> from) {
+        ListTag l = new ListTag();
+        for (Spawn s : from.values()) {
+            CompoundTag t = new CompoundTag();
+            t.putString("name", s.name); t.putString("dim", s.dim);
+            t.putDouble("x", s.x); t.putDouble("y", s.y); t.putDouble("z", s.z);
+            l.add(t);
+        }
+        return l;
+    }
 
     public static SecoursData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(SecoursData::load, SecoursData::new, NAME);
@@ -83,8 +119,22 @@ public class SecoursData extends SavedData {
 
     public static SecoursData load(CompoundTag tag) {
         SecoursData d = new SecoursData();
-        d.hasHospital = tag.getBoolean("hasHospital"); d.hospitalDim = tag.getString("hospitalDim");
-        d.hx = tag.getDouble("hx"); d.hy = tag.getDouble("hy"); d.hz = tag.getDouble("hz");
+        loadSpawns(tag, "hospitals", d.hospitals);
+        loadSpawns(tag, "urgences", d.urgences);
+        if (d.hospitals.isEmpty() && tag.getBoolean("hasHospital")) {   // ancien point unique
+            Spawn s = new Spawn();
+            s.name = "hopital"; s.dim = tag.getString("hospitalDim");
+            s.x = tag.getDouble("hx"); s.y = tag.getDouble("hy"); s.z = tag.getDouble("hz");
+            d.hospitals.put(s.name, s);
+        }
+        ListTag hl = tag.getList("holds", Tag.TAG_COMPOUND);
+        for (int i = 0; i < hl.size(); i++) {
+            CompoundTag t = hl.getCompound(i);
+            Hold h = new Hold();
+            h.urgent = t.getBoolean("urgent"); h.endMs = t.getLong("end"); h.spawn = t.getString("spawn"); h.dim = t.getString("dim");
+            h.x = t.getDouble("x"); h.y = t.getDouble("y"); h.z = t.getDouble("z");
+            d.holds.put(t.getUUID("id"), h);
+        }
         ListTag il = tag.getList("injuries", Tag.TAG_COMPOUND);
         for (int i = 0; i < il.size(); i++) {
             CompoundTag t = il.getCompound(i);
@@ -126,8 +176,16 @@ public class SecoursData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag) {
-        tag.putBoolean("hasHospital", hasHospital); tag.putString("hospitalDim", hospitalDim);
-        tag.putDouble("hx", hx); tag.putDouble("hy", hy); tag.putDouble("hz", hz);
+        tag.put("hospitals", saveSpawns(hospitals));
+        tag.put("urgences", saveSpawns(urgences));
+        ListTag hl = new ListTag();
+        holds.forEach((id, h) -> {
+            CompoundTag t = new CompoundTag();
+            t.putUUID("id", id); t.putBoolean("urgent", h.urgent); t.putLong("end", h.endMs); t.putString("spawn", h.spawn); t.putString("dim", h.dim);
+            t.putDouble("x", h.x); t.putDouble("y", h.y); t.putDouble("z", h.z);
+            hl.add(t);
+        });
+        tag.put("holds", hl);
         ListTag il = new ListTag();
         injuries.forEach((id, j) -> {
             if (j.empty()) return;

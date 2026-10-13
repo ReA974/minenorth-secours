@@ -29,7 +29,8 @@ Avec `coma_mortel` (true par défaut), un inconscient n'est plus invulnérable :
 - `/reanimer <joueur>` : réanime un joueur inconscient.
 - `/retirerblessures <joueur>` : retire toutes ses blessures.
 - `/secours grade <joueur> <chef|medecin|secouriste|aucun>`, `/secours tablette <joueur>`.
-- `/secours hopital` : définit le point de réveil à l'hôpital (votre position).
+- `/secours hopital ajouter <nom>` | `supprimer <nom>` | `liste` : points de réveil de l'hôpital (votre position). Plusieurs points possibles : chaque réveil va au point le moins occupé. Le joueur reste dans un rayon de `hopital_rayon_blocs` (20) pendant `hopital_duree_minutes` (5).
+- `/secours urgences ajouter <nom>` | `supprimer <nom>` | `liste` : points de réveil des urgences. Un joueur mort avec une hémorragie grave s'y réveille, immobile et invulnérable pendant `urgences_duree_minutes` (10), puis il est soigné. Sans point d'urgences, il va à l'hôpital.
 - `/secours reload` : recharge `config/minenorth_secours.json`.
 
 ## Zone touchée par une balle (TACZ)

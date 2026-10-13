@@ -300,18 +300,58 @@ public final class SecoursService {
         SecoursData d = SecoursData.get(s);
         d.injuries.remove(p.getUUID());
         dismount(p);
-        hospitalArrival(p, "Réveil à l'hôpital sans intervention des secours");
+        hospitalArrival(p, "Réveil à l'hôpital sans intervention des secours", false);
     }
 
-    /** Téléporte à l'hôpital (si défini), rend de la vie et prélève la facture. */
-    private static void hospitalArrival(ServerPlayer p, String note) {
+    /** Point de réveil le moins occupé de la liste voulue (au hasard à égalité), ou null. */
+    private static SecoursData.Spawn pickSpawn(SecoursData d, boolean urgent, long now) {
+        Map<String, SecoursData.Spawn> list = urgent ? d.urgences : d.hospitals;
+        List<SecoursData.Spawn> best = new ArrayList<>();
+        int bestLoad = Integer.MAX_VALUE;
+        for (SecoursData.Spawn sp : list.values()) {
+            int load = 0;
+            for (SecoursData.Hold h : d.holds.values()) if (h.urgent == urgent && h.endMs > now && h.spawn.equalsIgnoreCase(sp.name)) load++;
+            if (load < bestLoad) { bestLoad = load; best.clear(); }
+            if (load == bestLoad) best.add(sp);
+        }
+        return best.isEmpty() ? null : best.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(best.size()));
+    }
+
+    private static boolean urgentHold(Player pl) {
+        if (!(pl instanceof ServerPlayer sp)) return false;
+        SecoursData.Hold h = SecoursData.get(sp.server).holds.get(sp.getUUID());
+        return h != null && h.urgent;
+    }
+
+    /** Inconscient, ou retenu immobile aux urgences : aucune action possible. */
+    private static boolean locked(Player pl) { return isComa(pl) || urgentHold(pl); }
+
+    /**
+     * Téléporte à un point de réveil (urgences si urgent et qu'il y en a, sinon hôpital), rend de la vie et prélève la facture.
+     * Le joueur est ensuite retenu : immobile aux urgences, dans un rayon autour du point à l'hôpital.
+     */
+    private static void hospitalArrival(ServerPlayer p, String note, boolean urgent) {
         MinecraftServer s = p.server;
         SecoursData d = SecoursData.get(s);
+        SecoursConfig cfg = SecoursConfig.get();
+        long now = System.currentTimeMillis();
         d.note(p.getUUID(), note);
-        if (d.hasHospital) {
-            ServerLevel level = s.getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(d.hospitalDim)));
-            if (level != null) p.teleportTo(level, d.hx, d.hy, d.hz, p.getYRot(), p.getXRot());
+        d.holds.remove(p.getUUID());
+        boolean toUrgences = urgent && !d.urgences.isEmpty();
+        SecoursData.Spawn spawn = pickSpawn(d, toUrgences, now);
+        if (spawn != null) {
+            ServerLevel level = s.getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(spawn.dim)));
+            if (level != null) {
+                dismount(p);
+                p.teleportTo(level, spawn.x, spawn.y, spawn.z, p.getYRot(), p.getXRot());
+                SecoursData.Hold h = new SecoursData.Hold();
+                h.urgent = toUrgences; h.spawn = spawn.name; h.dim = spawn.dim; h.x = spawn.x; h.y = spawn.y; h.z = spawn.z;
+                h.endMs = now + SecoursConfig.ms(toUrgences ? cfg.urgences_duree_minutes : cfg.hopital_duree_minutes);
+                if (h.endMs > now) d.holds.put(p.getUUID(), h);
+                if (toUrgences) tellSecours(s, "§c[Secours] " + display(s, p.getUUID()) + " est arrivé aux urgences (hémorragie grave).");
+            }
         }
+        d.setDirty();
         p.setHealth(Math.max(p.getHealth(), Math.min(p.getMaxHealth(), 10f)));
         long fee = SecoursConfig.cents(SecoursConfig.get().facture_hopital_euros);
         BankService bank = MineNorth.bank();
@@ -320,10 +360,77 @@ public final class SecoursService {
             paid = Math.max(0, Math.min(fee, bank.balance(s, p.getUUID())));
             if (paid > 0 && !bank.debit(s, p.getUUID(), paid, "secours:hopital", false).ok()) paid = 0;
         }
+        SecoursData.Hold held = d.holds.get(p.getUUID());
+        String stay = held == null ? ""
+                : held.urgent ? " Vous êtes aux urgences : vous restez immobile pendant " + minutes(held.endMs - now) + " le temps d'être soigné."
+                : " Vous ne pouvez pas vous éloigner de plus de " + (int) cfg.hopital_rayon_blocs + " blocs pendant " + minutes(held.endMs - now) + ".";
+        if (held != null) {
+            p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(10, 80, 20));
+            p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket(Component.literal(held.urgent
+                    ? "§7Vous êtes pris en charge, ne bougez pas (" + minutes(held.endMs - now) + ")"
+                    : "§7Restez à proximité du lit (" + minutes(held.endMs - now) + ")")));
+            p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(Component.literal(
+                    held.urgent ? "§c✚ Soins en cours" : "§e✚ Soins en cours")));
+        }
         tell(p, "§eVous vous réveillez à l'hôpital." + (fee > 0 ? " Facture : " + money(fee)
-                + (paid >= fee ? " (prélevée sur votre compte)." : paid > 0 ? " (" + money(paid) + " prélevés, solde insuffisant)." : " (non prélevée : pas de solde).") : ""));
+                + (paid >= fee ? " (prélevée sur votre compte)." : paid > 0 ? " (" + money(paid) + " prélevés, solde insuffisant)." : " (non prélevée : pas de solde).") : "") + stay);
         refresh(p);
     }
+
+    private static String minutes(long ms) {
+        long m = Math.max(1, Math.round(ms / 60_000.0));
+        return m + " min";
+    }
+
+    /** Chaque tick : fin de la retenue, immobilité aux urgences, rayon autour du point à l'hôpital. */
+    @SubscribeEvent
+    public static void holdTick(TickEvent.ServerTickEvent e) {
+        if (e.phase != TickEvent.Phase.END) return;
+        MinecraftServer s = e.getServer();
+        SecoursData d = SecoursData.get(s);
+        if (d.holds.isEmpty()) return;
+        long now = System.currentTimeMillis();
+        double radius = Math.max(1, SecoursConfig.get().hopital_rayon_blocs);
+        for (Map.Entry<UUID, SecoursData.Hold> en : new ArrayList<>(d.holds.entrySet())) {
+            ServerPlayer p = s.getPlayerList().getPlayer(en.getKey());
+            if (p == null) continue;
+            SecoursData.Hold h = en.getValue();
+            if (now >= h.endMs) {
+                d.holds.remove(en.getKey());
+                d.setDirty();
+                if (h.urgent) {
+                    p.setHealth(p.getMaxHealth());
+                    d.note(p.getUUID(), "Soigné aux urgences");
+                    tell(p, "§aLes urgences vous ont soigné : vous pouvez partir.");
+                } else tell(p, "§aVous pouvez quitter l'hôpital.");
+                refresh(p);
+                continue;
+            }
+            boolean sameDim = p.level().dimension().location().toString().equals(h.dim);
+            boolean out = !sameDim || (h.urgent
+                    ? Math.hypot(p.getX() - h.x, p.getZ() - h.z) > 0.3 || Math.abs(p.getY() - h.y) > 0.6
+                    : p.distanceToSqr(h.x, h.y, h.z) > radius * radius);
+            if (out) {
+                if (sameDim) p.connection.teleport(h.x, h.y, h.z, p.getYRot(), p.getXRot());
+                else {
+                    ServerLevel level = s.getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(h.dim)));
+                    if (level != null) p.teleportTo(level, h.x, h.y, h.z, p.getYRot(), p.getXRot());
+                }
+            }
+            // Barre d'action avec le temps restant, mise à jour chaque seconde.
+            long left = (h.endMs - now + 999) / 1000;
+            Long shown = BAR_SECOND.get(p.getUUID());
+            if (out || shown == null || shown != left) {
+                BAR_SECOND.put(p.getUUID(), left);
+                String clock = String.format("%d:%02d", left / 60, left % 60);
+                bar(p, h.urgent ? "§c✚ Soins en cours aux urgences : ne bougez pas §f" + clock
+                        : "§e✚ Soins en cours : restez à moins de " + (int) radius + " blocs §f" + clock);
+            }
+        }
+    }
+
+    /** Dernière seconde affichée dans la barre d'action de chaque joueur retenu. */
+    private static final Map<UUID, Long> BAR_SECOND = new HashMap<>();
 
     // ------------------------------------------------------------------ dégâts
     @SubscribeEvent
@@ -334,7 +441,7 @@ public final class SecoursService {
     /** Un joueur inconscient ne peut plus être frappé. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void attacked(LivingAttackEvent e) {
-        if (e.getEntity() instanceof ServerPlayer p && !comaLethal(p.server) && isComa(p) && !e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) e.setCanceled(true);
+        if (e.getEntity() instanceof ServerPlayer p && ((!comaLethal(p.server) && isComa(p)) || urgentHold(p)) && !e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) e.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -408,12 +515,18 @@ public final class SecoursService {
     public static void death(LivingDeathEvent e) {
         if (e.getEntity() instanceof ServerPlayer p) {
             Injury dying = SecoursData.get(p.server).peek(p.getUUID());
-            if (dying != null && dying.coma && SecoursConfig.get().coma_mortel) {
-                HOSPITAL_RESPAWN.add(p.getUUID());
+            boolean bleedOut = dying != null && dying.bleeding && dying.level >= SecoursData.GRAVE;
+            if (bleedOut) {
+                HOSPITAL_RESPAWN.put(p.getUUID(), true);
+                SecoursData.get(p.server).note(p.getUUID(), "Mort d'une hémorragie grave");
+                tellSecours(p.server, "§c[Secours] " + display(p.server, p.getUUID()) + " est mort d'une hémorragie grave.");
+            } else if (dying != null && dying.coma && SecoursConfig.get().coma_mortel) {
+                HOSPITAL_RESPAWN.put(p.getUUID(), false);
                 SecoursData.get(p.server).note(p.getUUID(), "Mort pendant le coma");
                 tellSecours(p.server, "§c[Secours] " + display(p.server, p.getUUID()) + " est mort pendant son coma.");
             }
             if (CARRY.containsKey(p.getUUID())) putDown(p);
+            SecoursData.get(p.server).holds.remove(p.getUUID());
             SecoursData.get(p.server).injuries.remove(p.getUUID());
             SecoursData.get(p.server).setDirty();
             CLINICS.remove(p.getUUID());
@@ -421,24 +534,24 @@ public final class SecoursService {
         }
     }
 
-    /** Joueurs morts pendant leur coma : au prochain respawn ils se réveillent à l'hôpital. */
-    private static final Set<UUID> HOSPITAL_RESPAWN = new HashSet<>();
+    /** Joueurs morts pendant leur coma ou d'une hémorragie grave : au prochain respawn ils se réveillent à l'hôpital (false) ou aux urgences (true). */
+    private static final Map<UUID, Boolean> HOSPITAL_RESPAWN = new HashMap<>();
 
     // ------------------------------------------------------------------ joueur inconscient : aucune action
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void interact(PlayerInteractEvent e) {
-        if (e.isCancelable() && isComa(e.getEntity())) e.setCanceled(true);
+        if (e.isCancelable() && locked(e.getEntity())) e.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void attack(AttackEntityEvent e) {
-        if (isComa(e.getEntity())) e.setCanceled(true);
+        if (locked(e.getEntity())) e.setCanceled(true);
     }
 
     /** Inconscient : seules les commandes de commandes_autorisees_coma passent (pas de /home, /spawn, /tpa pour fuir). */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void command(net.minecraftforge.event.CommandEvent e) {
-        if (!(e.getParseResults().getContext().getSource().getEntity() instanceof ServerPlayer p) || p.hasPermissions(2) || !isComa(p)) return;
+        if (!(e.getParseResults().getContext().getSource().getEntity() instanceof ServerPlayer p) || p.hasPermissions(2) || !locked(p)) return;
         String input = e.getParseResults().getReader().getString().trim();
         if (input.startsWith("/")) input = input.substring(1);
         String root = input.split(" ", 2)[0].toLowerCase(java.util.Locale.ROOT);
@@ -446,7 +559,8 @@ public final class SecoursService {
             if (allowed != null && root.equals(allowed.trim().toLowerCase(java.util.Locale.ROOT))) return;
         }
         e.setCanceled(true);
-        p.displayClientMessage(Component.literal("§cVous êtes inconscient : impossible d'utiliser cette commande."), true);
+        p.displayClientMessage(Component.literal(isComa(p) ? "§cVous êtes inconscient : impossible d'utiliser cette commande."
+                : "§cVous êtes aux urgences : impossible d'utiliser cette commande."), true);
     }
 
     // ------------------------------------------------------------------ soins par objets
@@ -839,6 +953,7 @@ public final class SecoursService {
 
     public static String adminHeal(ServerPlayer target) {
         SecoursData.get(target.server).injuries.remove(target.getUUID());
+        SecoursData.get(target.server).holds.remove(target.getUUID());
         CLINICS.remove(target.getUUID());
         NEXT_BLEED.remove(target.getUUID());
         tell(target, "§aToutes vos blessures ont été retirées par un administrateur.");
@@ -846,13 +961,40 @@ public final class SecoursService {
         return "Blessures de " + MineNorth.displayName(target) + " retirées.";
     }
 
-    public static String setHospital(ServerPlayer p) {
+    /** Ajoute un point de réveil (hôpital ou urgences) à la position du joueur. name = null : nom automatique. */
+    public static String addSpawn(ServerPlayer p, boolean urgences, String name) {
         SecoursData d = SecoursData.get(p.server);
-        d.hasHospital = true;
-        d.hospitalDim = p.level().dimension().location().toString();
-        d.hx = p.getX(); d.hy = p.getY(); d.hz = p.getZ();
+        Map<String, SecoursData.Spawn> list = urgences ? d.urgences : d.hospitals;
+        String base = urgences ? "urgences" : "hopital";
+        if (name == null) {
+            int n = list.size() + 1;
+            while (list.containsKey(base + n)) n++;
+            name = base + n;
+        }
+        SecoursData.Spawn s = new SecoursData.Spawn();
+        s.name = name; s.dim = p.level().dimension().location().toString();
+        s.x = p.getX(); s.y = p.getY(); s.z = p.getZ();
+        boolean replaced = list.put(name.toLowerCase(Locale.ROOT), s) != null;
         d.setDirty();
-        return "Point de réveil de l'hôpital défini à votre position.";
+        return "Point de réveil « " + name + " » (" + (urgences ? "urgences" : "hôpital") + ") " + (replaced ? "déplacé" : "défini") + " à votre position.";
+    }
+
+    public static String removeSpawn(MinecraftServer s, boolean urgences, String name) {
+        SecoursData d = SecoursData.get(s);
+        if ((urgences ? d.urgences : d.hospitals).remove(name.toLowerCase(Locale.ROOT)) == null) return "Point inconnu : " + name;
+        d.setDirty();
+        return "Point « " + name + " » supprimé.";
+    }
+
+    public static String listSpawns(MinecraftServer s, boolean urgences) {
+        SecoursData d = SecoursData.get(s);
+        Map<String, SecoursData.Spawn> list = urgences ? d.urgences : d.hospitals;
+        String cmd = urgences ? "/secours urgences ajouter <nom>" : "/secours hopital ajouter <nom>";
+        if (list.isEmpty()) return "Aucun point (" + (urgences ? "urgences" : "hôpital") + "). " + cmd + " à l'endroit voulu.";
+        StringBuilder b = new StringBuilder("Points de réveil " + (urgences ? "des urgences" : "de l'hôpital") + " (" + list.size() + ") :");
+        for (SecoursData.Spawn sp : list.values())
+            b.append("\n - ").append(sp.name).append("  ").append((int) sp.x).append(' ').append((int) sp.y).append(' ').append((int) sp.z);
+        return b.toString();
     }
 
     // ------------------------------------------------------------------ effectifs et tablette
@@ -1050,7 +1192,10 @@ public final class SecoursService {
     @SubscribeEvent
     public static void respawn(PlayerEvent.PlayerRespawnEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
-        if (!e.isEndConquered() && HOSPITAL_RESPAWN.remove(p.getUUID())) hospitalArrival(p, "Réveil à l'hôpital après un décès pendant le coma");
+        if (!e.isEndConquered()) {
+            Boolean urgent = HOSPITAL_RESPAWN.remove(p.getUUID());
+            if (urgent != null) hospitalArrival(p, urgent ? "Réveil aux urgences après une hémorragie grave" : "Réveil à l'hôpital après un décès pendant le coma", urgent);
+        }
         applyEffects(p, SecoursData.get(p.server).peek(p.getUUID()));
         sync(p);
     }
@@ -1058,7 +1203,7 @@ public final class SecoursService {
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent e) {
         UUID id = e.getEntity().getUUID();
-        TABLETS.remove(id); HOSPITAL_RESPAWN.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); DEFIBS.remove(id); DEFIBS.values().removeIf(d -> d.target().equals(id)); FALLS.remove(id); NEXT_BLEED.remove(id);
+        TABLETS.remove(id); HOSPITAL_RESPAWN.remove(id); BAR_SECOND.remove(id); CLINIC_OPEN.remove(id); CARES.remove(id); DEFIBS.remove(id); DEFIBS.values().removeIf(d -> d.target().equals(id)); FALLS.remove(id); NEXT_BLEED.remove(id);
         if (e.getEntity() instanceof ServerPlayer leaving) {
             SecoursData.get(leaving.server).onDuty.remove(id);
             FireService.onLogout(id);
