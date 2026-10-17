@@ -12,6 +12,13 @@
    "conditions": [
     {
      "condition": "minecraft:survives_explosion"
+    },
+    {
+     "condition": "minecraft:block_state_property",
+     "block": "minenorthvie:tapis_de_course",
+     "properties": {
+      "ext": "false"
+     }
     }
    ]
   }

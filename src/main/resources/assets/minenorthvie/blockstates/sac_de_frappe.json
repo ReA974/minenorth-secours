@@ -1,64 +1,112 @@
 {
  "variants": {
-  "anim=0,facing=north": {
+  "anim=0,ext=false,facing=north": {
    "model": "minenorthvie:block/sac_de_frappe_0"
   },
-  "anim=1,facing=north": {
+  "anim=0,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=north": {
    "model": "minenorthvie:block/sac_de_frappe_1"
   },
-  "anim=2,facing=north": {
+  "anim=1,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=north": {
    "model": "minenorthvie:block/sac_de_frappe_2"
   },
-  "anim=3,facing=north": {
+  "anim=2,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=north": {
    "model": "minenorthvie:block/sac_de_frappe_3"
   },
-  "anim=0,facing=east": {
+  "anim=3,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=0,ext=false,facing=east": {
    "model": "minenorthvie:block/sac_de_frappe_0",
    "y": 90
   },
-  "anim=1,facing=east": {
+  "anim=0,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=east": {
    "model": "minenorthvie:block/sac_de_frappe_1",
    "y": 90
   },
-  "anim=2,facing=east": {
+  "anim=1,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=east": {
    "model": "minenorthvie:block/sac_de_frappe_2",
    "y": 90
   },
-  "anim=3,facing=east": {
+  "anim=2,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=east": {
    "model": "minenorthvie:block/sac_de_frappe_3",
    "y": 90
   },
-  "anim=0,facing=south": {
+  "anim=3,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=0,ext=false,facing=south": {
    "model": "minenorthvie:block/sac_de_frappe_0",
    "y": 180
   },
-  "anim=1,facing=south": {
+  "anim=0,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=south": {
    "model": "minenorthvie:block/sac_de_frappe_1",
    "y": 180
   },
-  "anim=2,facing=south": {
+  "anim=1,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=south": {
    "model": "minenorthvie:block/sac_de_frappe_2",
    "y": 180
   },
-  "anim=3,facing=south": {
+  "anim=2,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=south": {
    "model": "minenorthvie:block/sac_de_frappe_3",
    "y": 180
   },
-  "anim=0,facing=west": {
+  "anim=3,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=0,ext=false,facing=west": {
    "model": "minenorthvie:block/sac_de_frappe_0",
    "y": 270
   },
-  "anim=1,facing=west": {
+  "anim=0,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=west": {
    "model": "minenorthvie:block/sac_de_frappe_1",
    "y": 270
   },
-  "anim=2,facing=west": {
+  "anim=1,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=west": {
    "model": "minenorthvie:block/sac_de_frappe_2",
    "y": 270
   },
-  "anim=3,facing=west": {
+  "anim=2,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=west": {
    "model": "minenorthvie:block/sac_de_frappe_3",
    "y": 270
+  },
+  "anim=3,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
   }
  }
 }
