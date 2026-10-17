@@ -13,7 +13,7 @@ import java.util.UUID;
 
 /** Tablette des secours : alertes (joueurs inconscients) et effectifs. */
 public class TabletScreen extends Screen {
-    private static final int W = 420, H = 240, ROWS = 6;
+    private static final int W = 420, H = 264, ROWS = 6, CT = 96;
     private static final String[] GRADES = {"Chef des secours", "Médecin", "Secouriste"};
 
     private ModNetwork.TabletPacket v;
@@ -64,16 +64,16 @@ public class TabletScreen extends Screen {
 
     private void pager(int pages, int right, int y) {
         if (pages <= 1) return;
-        btn(right - 78, y, 20, 18, "<", MineNorthStyle.DARK, () -> flip(-1)).enabled(page > 0);
+        btn(right - 82, y, 22, 20, "<", MineNorthStyle.DARK, () -> flip(-1)).enabled(page > 0);
         String p = (page + 1) + " / " + pages;
-        label(p, right - 39 - font.width(p) / 2, y + 5, MineNorthStyle.TEXT);
-        btn(right - 20, y, 20, 18, ">", MineNorthStyle.DARK, () -> flip(1)).enabled(page < pages - 1);
+        label(p, right - 41 - font.width(p) / 2, y + 6, MineNorthStyle.TEXT);
+        btn(right - 22, y, 22, 20, ">", MineNorthStyle.DARK, () -> flip(1)).enabled(page < pages - 1);
     }
 
     @Override
     protected void init() {
         left = (width - W) / 2;
-        top = Math.max(4, (height - H) / 2);
+        top = Math.max(0, (height - H) / 2);
         labels.clear();
         cards.clear();
         bName = null;
@@ -81,16 +81,20 @@ public class TabletScreen extends Screen {
         int x = left + 14, w = W - 28;
         btn(left + W - 100, top + 10, 86, 16, "Fermer", MineNorthButton.GHOST, this::onClose);
         int view = v.view();
-        btn(x, top + 46, 76, 18, "ALERTES", view == ModNetwork.V_ALERTS ? MineNorthStyle.CYAN : MineNorthStyle.DARK, () -> send(ModNetwork.A_ALERTS, null, "", 0));
-        btn(x + 80, top + 46, 76, 18, "DOSSIERS", view == ModNetwork.V_FILE ? MineNorthStyle.CYAN : MineNorthStyle.DARK, () -> send(ModNetwork.A_FILE, null, "", 0));
-        if (v.grade() == 0) btn(x + 160, top + 46, 76, 18, "EFFECTIFS", view == ModNetwork.V_ROSTER ? MineNorthStyle.CYAN : MineNorthStyle.DARK, () -> send(ModNetwork.A_ROSTER, null, "", 0));
-        // Prise de service : sans elle, pas d'alertes et pas de soins.
-        btn(x + w - 150, top + 46, 150, 18, v.onDuty() ? "EN SERVICE • QUITTER" : "PRENDRE MON SERVICE",
+        // Onglets larges et lisibles ; l'onglet Effectifs n'existe que pour le chef.
+        int tabs = v.grade() == 0 ? 3 : 2, tw = (w - 6 * (tabs - 1)) / tabs;
+        btn(x, top + 44, tw, 22, "Alertes", view == ModNetwork.V_ALERTS ? MineNorthStyle.CYAN : MineNorthStyle.DARK, () -> send(ModNetwork.A_ALERTS, null, "", 0));
+        btn(x + tw + 6, top + 44, tw, 22, "Dossiers médicaux", view == ModNetwork.V_FILE ? MineNorthStyle.CYAN : MineNorthStyle.DARK, () -> send(ModNetwork.A_FILE, null, "", 0));
+        if (v.grade() == 0) btn(x + 2 * (tw + 6), top + 44, tw, 22, "Effectifs", view == ModNetwork.V_ROSTER ? MineNorthStyle.CYAN : MineNorthStyle.DARK, () -> send(ModNetwork.A_ROSTER, null, "", 0));
+        // Prise de service : sans elle, pas d'alertes et pas de soins. Les deux boutons ne se chevauchent plus (rangée à part).
+        boolean phone = v.onDuty() && v.phone() > 0;
+        int dw = phone ? 196 : w;
+        btn(x, top + 70, dw, 20, v.onDuty() ? "En service • quitter mon poste" : "Prendre mon service",
                 v.onDuty() ? MineNorthStyle.GREEN : MineNorthStyle.PINK, () -> send(ModNetwork.A_DUTY, null, "", 0));
-        // Réponse aux appels du 18 sur le téléphone personnel (pont téléphone), à gauche du bouton de service.
-        if (v.onDuty() && v.phone() > 0) {
+        // Réponse aux appels du 18 sur le téléphone personnel (pont téléphone), à droite du bouton de service.
+        if (phone) {
             boolean on = v.phone() == 2;
-            btn(x + w - 150 - 4 - 132, top + 46, 132, 18, on ? "TÉLÉPHONE 18 : OUI" : "TÉLÉPHONE 18 : NON", on ? MineNorthStyle.GREEN : MineNorthStyle.DARK,
+            btn(x + dw + 6, top + 70, w - dw - 6, 20, on ? "Répondre sur mon téléphone : oui" : "Répondre sur mon téléphone : non", on ? MineNorthStyle.GREEN : MineNorthStyle.DARK,
                     () -> send(ModNetwork.A_PHONE, null, "", 0));
         }
         if (view == ModNetwork.V_FILE) buildFile(x, w);
@@ -100,10 +104,9 @@ public class TabletScreen extends Screen {
 
     private void buildAlerts(int x, int w) {
         List<ModNetwork.Alert> list = v.alerts();
-        int y0 = top + 72, rows = ROWS - 1;
+        int y0 = top + CT, rows = ROWS - 1;
         int pages = Math.max(1, (list.size() + rows - 1) / rows);
         page = Math.max(0, Math.min(pages - 1, page));
-        if (!v.onDuty()) label("Vous êtes hors service : vous ne recevez pas les alertes et ne pouvez pas soigner.", x, top + H - 50, MineNorthStyle.WARN, w);
         if (list.isEmpty()) label("Aucune alerte : personne n'est inconscient, aucun incendie, aucun appel d'urgence.", x, y0 + 6, MineNorthStyle.OK, w);
         for (int i = 0; i < rows; i++) {
             int idx = page * rows + i;
@@ -113,7 +116,7 @@ public class TabletScreen extends Screen {
             boolean fire = a.kind() == ModNetwork.Alert.FIRE;
             boolean call = a.kind() == ModNetwork.Alert.CALL;
             int color = call ? 0xFF4FC3F7 : fire ? 0xFFFF8A33 : a.coma() ? MineNorthStyle.ALERT : MineNorthStyle.WARN;
-            card(x, y, w, 24, color);
+            card(x, y, w, 25, color);
             label(a.name(), x + 8, y + 3, MineNorthStyle.WHITE, 150);
             String state = call ? "APPEL 18 • il y a " + ClientState.clock(a.secondsLeft()) + (a.info().isBlank() ? "" : " • " + a.info())
                     : fire ? "INCENDIE • à maîtriser avant " + ClientState.clock(a.secondsLeft()) : a.coma() ? "INCONSCIENT • hôpital dans " + ClientState.clock(a.secondsLeft()) : "BLESSURE GRAVE";
@@ -122,35 +125,36 @@ public class TabletScreen extends Screen {
             String where = a.x() + " " + a.y() + " " + a.z() + (a.distance() >= 0 ? "  (" + a.distance() + " m)" : "  (autre dimension)");
             label(where, x + 164, y + 3, MineNorthStyle.TEXT, 130);
             if (call) {
-                btn(x + w - 82, y + 4, 78, 16, "GUIDER", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
+                btn(x + w - 90, y + 3, 86, 19, "Guider", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
             } else if (fire) {
-                btn(x + w - 82, y + 4, 78, 16, "J'Y VAIS", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
+                btn(x + w - 90, y + 3, 86, 19, "J'y vais", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
                 if (!a.dispatch().isEmpty()) label("En route : " + a.dispatch(), x + 300, y + 3, MineNorthStyle.OK, w - 390);
             } else if (a.dispatch().isEmpty()) {
-                btn(x + w - 82, y + 4, 78, 16, "J'Y VAIS", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
+                btn(x + w - 90, y + 3, 86, 19, "J'y vais", MineNorthStyle.GREEN, () -> send(ModNetwork.A_DISPATCH, a.id(), "", 0));
             } else {
                 label("En route :", x + w - 110, y + 3, MineNorthStyle.MUTED);
                 label(a.dispatch(), x + w - 110, y + 14, MineNorthStyle.OK, 104);
             }
         }
         int yb = top + H - 36;
-        btn(x, yb, 110, 18, "ACTUALISER", MineNorthStyle.DARK, () -> send(ModNetwork.A_ALERTS, null, "", 0));
+        btn(x, yb, 110, 20, "Actualiser", MineNorthStyle.DARK, () -> send(ModNetwork.A_ALERTS, null, "", 0));
+        if (!v.onDuty()) label("Hors service : pas d'alertes ni de soins.", x + 118, yb + 6, MineNorthStyle.WARN, w - 118 - 90);
         pager(pages, x + w, yb);
     }
 
     /** Dossier médical d'un citoyen : recherche par nom, puis historique. */
     private void buildFile(int x, int w) {
-        int y0 = top + 72;
+        int y0 = top + CT;
         bSearch = new EditBox(font, x, y0, 200, 18, Component.literal("Recherche"));
         bSearch.setMaxLength(32);
         bSearch.setHint(Component.literal("Nom ou prénom du citoyen"));
         bSearch.setValue(kSearch);
         addRenderableWidget(bSearch);
-        btn(x + 206, y0 - 1, 96, 20, "RECHERCHER", MineNorthStyle.CYAN, () -> send(ModNetwork.A_FILE, null, bSearch.getValue(), 0));
+        btn(x + 206, y0 - 1, 100, 20, "Rechercher", MineNorthStyle.CYAN, () -> send(ModNetwork.A_FILE, null, bSearch.getValue(), 0));
         if (v.fileName().isEmpty()) { label("Cherchez un citoyen pour voir son dossier médical.", x, y0 + 30, MineNorthStyle.MUTED); return; }
         label(v.fileName(), x, y0 + 26, MineNorthStyle.WHITE);
         List<String> lines = v.fileLines();
-        int rows = 8, pages = Math.max(1, (lines.size() + rows - 1) / rows);
+        int rows = 7, pages = Math.max(1, (lines.size() + rows - 1) / rows);
         page = Math.max(0, Math.min(pages - 1, page));
         if (lines.isEmpty()) label("Dossier vide : aucune blessure enregistrée.", x, y0 + 42, MineNorthStyle.OK);
         for (int i = 0; i < rows; i++) {
@@ -164,7 +168,7 @@ public class TabletScreen extends Screen {
 
     private void buildRoster(int x, int w) {
         List<ModNetwork.Member> list = v.members();
-        int y0 = top + 72, rows = ROWS;
+        int y0 = top + CT, rows = ROWS;
         int pages = Math.max(1, (list.size() + rows - 1) / rows);
         page = Math.max(0, Math.min(pages - 1, page));
         var me = Minecraft.getInstance().player;
@@ -191,14 +195,14 @@ public class TabletScreen extends Screen {
         bName.setHint(Component.literal("Prénom Nom ou pseudo"));
         bName.setValue(kName);
         addRenderableWidget(bName);
-        btn(x + 156, yb - 1, 140, 20, "RECRUTER (SECOURISTE)", MineNorthStyle.GREEN, () -> send(ModNetwork.A_GRADE, null, bName.getValue(), 2));
+        btn(x + 156, yb - 1, 150, 20, "Recruter un secouriste", MineNorthStyle.GREEN, () -> send(ModNetwork.A_GRADE, null, bName.getValue(), 2));
         pager(pages, x + w, yb);
     }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
         renderBackground(g);
-        MineNorthStyle.panel(g, left, top, W, H, "SECOURS", "MINENORTH RP • POMPIERS ET SAMU");
+        MineNorthStyle.panel(g, left, top, W, H, "SECOURS", "MINENORTH RP • TABLETTE POMPIERS ET SAMU");
         for (Card c : cards) MineNorthStyle.card(g, c.x(), c.y(), c.w(), c.h(), false, c.accent());
         for (Label l : labels) g.drawString(font, l.text(), l.x(), l.y(), l.color(), false);
         if (!message.isEmpty()) {
