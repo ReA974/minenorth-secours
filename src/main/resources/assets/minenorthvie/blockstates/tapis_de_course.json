@@ -1,0 +1,64 @@
+{
+ "variants": {
+  "anim=0,facing=north": {
+   "model": "minenorthvie:block/tapis_de_course_0"
+  },
+  "anim=1,facing=north": {
+   "model": "minenorthvie:block/tapis_de_course_1"
+  },
+  "anim=2,facing=north": {
+   "model": "minenorthvie:block/tapis_de_course_2"
+  },
+  "anim=3,facing=north": {
+   "model": "minenorthvie:block/tapis_de_course_3"
+  },
+  "anim=0,facing=east": {
+   "model": "minenorthvie:block/tapis_de_course_0",
+   "y": 90
+  },
+  "anim=1,facing=east": {
+   "model": "minenorthvie:block/tapis_de_course_1",
+   "y": 90
+  },
+  "anim=2,facing=east": {
+   "model": "minenorthvie:block/tapis_de_course_2",
+   "y": 90
+  },
+  "anim=3,facing=east": {
+   "model": "minenorthvie:block/tapis_de_course_3",
+   "y": 90
+  },
+  "anim=0,facing=south": {
+   "model": "minenorthvie:block/tapis_de_course_0",
+   "y": 180
+  },
+  "anim=1,facing=south": {
+   "model": "minenorthvie:block/tapis_de_course_1",
+   "y": 180
+  },
+  "anim=2,facing=south": {
+   "model": "minenorthvie:block/tapis_de_course_2",
+   "y": 180
+  },
+  "anim=3,facing=south": {
+   "model": "minenorthvie:block/tapis_de_course_3",
+   "y": 180
+  },
+  "anim=0,facing=west": {
+   "model": "minenorthvie:block/tapis_de_course_0",
+   "y": 270
+  },
+  "anim=1,facing=west": {
+   "model": "minenorthvie:block/tapis_de_course_1",
+   "y": 270
+  },
+  "anim=2,facing=west": {
+   "model": "minenorthvie:block/tapis_de_course_2",
+   "y": 270
+  },
+  "anim=3,facing=west": {
+   "model": "minenorthvie:block/tapis_de_course_3",
+   "y": 270
+  }
+ }
+}

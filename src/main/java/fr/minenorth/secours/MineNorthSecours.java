@@ -16,5 +16,6 @@ public class MineNorthSecours {
         fr.minenorth.api.MineNorth.provide(fr.minenorth.api.SecoursService.class, new fr.minenorth.secours.api.SecoursProvider());
         fr.minenorth.secours.compat.TaczCompat.register();
         ModItems.register(FMLJavaModLoadingContext.get().getModEventBus());
+        fr.minenorth.secours.vie.MineNorthVie.init(FMLJavaModLoadingContext.get().getModEventBus());
     }
 }

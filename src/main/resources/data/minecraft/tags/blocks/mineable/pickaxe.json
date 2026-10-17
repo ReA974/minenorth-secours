@@ -1,0 +1,10 @@
+{
+ "replace": false,
+ "values": [
+  "minenorthvie:tapis_de_course",
+  "minenorthvie:banc_musculation",
+  "minenorthvie:sac_de_frappe",
+  "minenorthvie:velo_appartement",
+  "minenorthvie:halteres"
+ ]
+}

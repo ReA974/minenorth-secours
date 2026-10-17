@@ -1,0 +1,19 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "pattern": [
+  "WWW",
+  "I I",
+  "III"
+ ],
+ "key": {
+  "W": {
+   "item": "minecraft:black_wool"
+  },
+  "I": {
+   "item": "minecraft:iron_ingot"
+  }
+ },
+ "result": {
+  "item": "minenorthvie:banc_musculation"
+ }
+}

@@ -73,3 +73,11 @@ Quand des pompiers sont **en service**, un incendie se déclenche sur un des **s
 **Tous droits réservés - MineNorthRP.** Réutilisation, copie, modification, décompilation / ingénierie
 inverse (y compris par outils d'intelligence artificielle) et utilisation pour entraîner une IA sont
 **interdites** sans autorisation écrite. Voir [LICENSE](LICENSE).
+
+## Module Santé (ex-mod minenorth-vie, fusionné)
+
+Le mod **minenorth-vie** est fusionné ici (code dans `fr.minenorth.secours.vie`) : forme, alimentation, repos, toxines, immunité, maladies (mode FUN par défaut), salle de sport (machines 3D + `GymSeat`), écran Santé (touche H, `/sante`), `/vie`, `VieApi`, `VieWipe`, config `minenorth_vie.toml`.
+
+- Les identifiants restent `minenorthvie:*` (objets, blocs, entité `gym_seat`, réseau) : aucun remapping nécessaire, objets/machines/statistiques existants conservés. Les assets et données sont dans `assets|data/minenorthvie/`.
+- Migration : remplacer `minenorth-vie-1.0.0.jar` par ce jar (ne jamais garder les deux).
+- Objets de santé en vrais modèles 3D : `java tools/GenSante.java` régénère textures et modèles (médicament, vitamines, vaccin) ; `tools/GenAssets.java` ne s'occupe que du matériel de secours.

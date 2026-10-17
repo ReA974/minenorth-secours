@@ -1,0 +1,19 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "pattern": [
+  "I",
+  "R",
+  "R"
+ ],
+ "key": {
+  "I": {
+   "item": "minecraft:iron_ingot"
+  },
+  "R": {
+   "item": "minecraft:red_wool"
+  }
+ },
+ "result": {
+  "item": "minenorthvie:sac_de_frappe"
+ }
+}

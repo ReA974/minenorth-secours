@@ -1,0 +1,22 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "pattern": [
+  "  L",
+  "IWI",
+  "III"
+ ],
+ "key": {
+  "L": {
+   "item": "minecraft:lever"
+  },
+  "W": {
+   "item": "minecraft:red_wool"
+  },
+  "I": {
+   "item": "minecraft:iron_ingot"
+  }
+ },
+ "result": {
+  "item": "minenorthvie:velo_appartement"
+ }
+}

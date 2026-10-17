@@ -6,7 +6,7 @@ modId="minenorthsecours"
 version="1.0.0"
 displayName="MineNorth Secours"
 authors="MineNorth RP"
-description='''Blessures et secours MineNorth RP : chutes, hémorragies, coma, pompiers et SAMU, hôpital.'''
+description='''Santé et secours MineNorth RP : blessures, hémorragies, coma, pompiers et SAMU, hôpital, et mode de vie (forme, alimentation, repos, immunité, maladies, salle de sport, médicaments).'''
 [[dependencies.minenorthsecours]]
 modId="forge"
 mandatory=true

@@ -1,0 +1,22 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "pattern": [
+  "WWW",
+  "ILI",
+  "III"
+ ],
+ "key": {
+  "W": {
+   "item": "minecraft:black_wool"
+  },
+  "I": {
+   "item": "minecraft:iron_ingot"
+  },
+  "L": {
+   "item": "minecraft:lever"
+  }
+ },
+ "result": {
+  "item": "minenorthvie:tapis_de_course"
+ }
+}
