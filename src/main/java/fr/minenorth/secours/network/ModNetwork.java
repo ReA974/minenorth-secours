@@ -29,14 +29,14 @@ public final class ModNetwork {
     private static int id = 0;
 
     public static void register() {
-        CHANNEL.registerMessage(id++, StatePacket.class, StatePacket::encode, StatePacket::decode, StatePacket::handle);
-        CHANNEL.registerMessage(id++, TabletPacket.class, TabletPacket::encode, TabletPacket::decode, TabletPacket::handle);
-        CHANNEL.registerMessage(id++, ClinicPacket.class, ClinicPacket::encode, ClinicPacket::decode, ClinicPacket::handle);
-        CHANNEL.registerMessage(id++, ActionPacket.class, ActionPacket::encode, ActionPacket::decode, ActionPacket::handle);
-        CHANNEL.registerMessage(id++, ComaListPacket.class, ComaListPacket::encode, ComaListPacket::decode, ComaListPacket::handle);
-        CHANNEL.registerMessage(id++, DefibStartPacket.class, DefibStartPacket::encode, DefibStartPacket::decode, DefibStartPacket::handle);
-        CHANNEL.registerMessage(id++, DefibResultPacket.class, DefibResultPacket::encode, DefibResultPacket::decode, DefibResultPacket::handle);
-        CHANNEL.registerMessage(id++, WakePacket.class, WakePacket::encode, WakePacket::decode, WakePacket::handle);
+        CHANNEL.registerMessage(id++, StatePacket.class, StatePacket::encode, StatePacket::decode, StatePacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(id++, TabletPacket.class, TabletPacket::encode, TabletPacket::decode, TabletPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(id++, ClinicPacket.class, ClinicPacket::encode, ClinicPacket::decode, ClinicPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(id++, ActionPacket.class, ActionPacket::encode, ActionPacket::decode, ActionPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(id++, ComaListPacket.class, ComaListPacket::encode, ComaListPacket::decode, ComaListPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(id++, DefibStartPacket.class, DefibStartPacket::encode, DefibStartPacket::decode, DefibStartPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(id++, DefibResultPacket.class, DefibResultPacket::encode, DefibResultPacket::decode, DefibResultPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(id++, WakePacket.class, WakePacket::encode, WakePacket::decode, WakePacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void send(ServerPlayer p, Object packet) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), packet); }
