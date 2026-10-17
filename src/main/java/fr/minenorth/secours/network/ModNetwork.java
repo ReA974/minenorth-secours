@@ -20,7 +20,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     public static final int V_ALERTS = 0, V_ROSTER = 1, V_FILE = 2;
-    public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8;
+    public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8, A_PHONE = 9;
     public static final UUID NONE = new UUID(0, 0);
 
     private static final String PROTOCOL = "5";
@@ -134,15 +134,15 @@ public final class ModNetwork {
 
     /** distance = -1 quand la victime est dans une autre dimension. */
     public record TabletPacket(int view, int grade, String message, boolean ok, boolean onDuty, List<Alert> alerts, List<Member> members,
-                               String fileName, List<String> fileLines) {
+                               String fileName, List<String> fileLines, int phone) {
         static void encode(TabletPacket p, FriendlyByteBuf b) {
             b.writeVarInt(p.view); b.writeVarInt(p.grade); b.writeUtf(p.message); b.writeBoolean(p.ok); b.writeBoolean(p.onDuty);
             b.writeCollection(p.alerts, Alert::encode); b.writeCollection(p.members, Member::encode);
-            b.writeUtf(p.fileName); b.writeCollection(p.fileLines, (x, v) -> x.writeUtf(v));
+            b.writeUtf(p.fileName); b.writeCollection(p.fileLines, (x, v) -> x.writeUtf(v)); b.writeVarInt(p.phone);
         }
         static TabletPacket decode(FriendlyByteBuf b) {
             return new TabletPacket(b.readVarInt(), b.readVarInt(), b.readUtf(), b.readBoolean(), b.readBoolean(),
-                    b.readList(Alert::decode), b.readList(Member::decode), b.readUtf(), b.readList(FriendlyByteBuf::readUtf));
+                    b.readList(Alert::decode), b.readList(Member::decode), b.readUtf(), b.readList(FriendlyByteBuf::readUtf), b.readVarInt());
         }
         static void handle(TabletPacket p, Supplier<NetworkEvent.Context> c) {
             c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,

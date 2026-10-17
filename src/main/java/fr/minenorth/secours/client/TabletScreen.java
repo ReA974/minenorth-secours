@@ -87,6 +87,12 @@ public class TabletScreen extends Screen {
         // Prise de service : sans elle, pas d'alertes et pas de soins.
         btn(x + w - 150, top + 46, 150, 18, v.onDuty() ? "EN SERVICE • QUITTER" : "PRENDRE MON SERVICE",
                 v.onDuty() ? MineNorthStyle.GREEN : MineNorthStyle.PINK, () -> send(ModNetwork.A_DUTY, null, "", 0));
+        // Réponse aux appels du 18 sur le téléphone personnel (pont téléphone), à gauche du bouton de service.
+        if (v.onDuty() && v.phone() > 0) {
+            boolean on = v.phone() == 2;
+            btn(x + w - 150 - 4 - 132, top + 46, 132, 18, on ? "TÉLÉPHONE 18 : OUI" : "TÉLÉPHONE 18 : NON", on ? MineNorthStyle.GREEN : MineNorthStyle.DARK,
+                    () -> send(ModNetwork.A_PHONE, null, "", 0));
+        }
         if (view == ModNetwork.V_FILE) buildFile(x, w);
         else if (view == ModNetwork.V_ROSTER) buildRoster(x, w);
         else buildAlerts(x, w);

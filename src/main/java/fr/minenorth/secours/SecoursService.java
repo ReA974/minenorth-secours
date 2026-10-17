@@ -1065,7 +1065,7 @@ public final class SecoursService {
         // Appels d'urgence ensuite (les plus anciens d'abord : secondsLeft = ancienneté).
         out.sort(Comparator.comparingInt((ModNetwork.Alert a) -> a.coma() ? 0 : a.kind() == ModNetwork.Alert.CALL ? 1 : 2)
                 .thenComparingInt(a -> a.kind() == ModNetwork.Alert.CALL ? -a.secondsLeft() : a.secondsLeft()));
-        ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_ALERTS, rank(p), msg, ok, onDuty(p), out, List.of(), "", List.of()));
+        ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_ALERTS, rank(p), msg, ok, onDuty(p), out, List.of(), "", List.of(), fr.minenorth.secours.compat.Compat.phoneState(p)));
     }
 
     private static void sendRoster(ServerPlayer p, String msg, boolean ok) {
@@ -1077,7 +1077,7 @@ public final class SecoursService {
                     s.getPlayerList().getPlayer(e.getKey()) != null, d.onDuty.contains(e.getKey())));
         }
         out.sort(Comparator.comparingInt(ModNetwork.Member::grade).thenComparing(m -> m.name().toLowerCase(Locale.ROOT)));
-        ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_ROSTER, rank(p), msg, ok, onDuty(p), List.of(), out, "", List.of()));
+        ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_ROSTER, rank(p), msg, ok, onDuty(p), List.of(), out, "", List.of(), fr.minenorth.secours.compat.Compat.phoneState(p)));
     }
 
     /** Dossier médical : recherche par nom RP ou pseudo, puis historique du plus récent au plus ancien. */
@@ -1110,7 +1110,7 @@ public final class SecoursService {
             if (j != null && !j.empty()) lines.add(0, "ÉTAT ACTUEL : " + (j.coma ? "inconscient, " : "") + SecoursData.NIVEAUX[j.level].toLowerCase(Locale.ROOT)
                     + (j.bleeding ? ", hémorragie" : "") + (j.zones != 0 ? ", balle : " + TaczCompat.describe(j.zones) : ""));
         }
-        ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_FILE, rank(p), msg, msg.isEmpty(), onDuty(p), List.of(), List.of(), name, lines));
+        ModNetwork.send(p, new ModNetwork.TabletPacket(ModNetwork.V_FILE, rank(p), msg, msg.isEmpty(), onDuty(p), List.of(), List.of(), name, lines, fr.minenorth.secours.compat.Compat.phoneState(p)));
     }
 
     public static void handle(ServerPlayer p, ActionPacket k) {
@@ -1127,6 +1127,10 @@ public final class SecoursService {
             case ModNetwork.A_DUTY -> {
                 boolean now = setDuty(p, !onDuty(p));
                 sendAlerts(p, now ? "Vous êtes en service : vous recevez les alertes." : "Vous êtes hors service.", true);
+            }
+            case ModNetwork.A_PHONE -> {
+                fr.minenorth.secours.compat.Compat.setPhone(p, fr.minenorth.secours.compat.Compat.phoneState(p) != 2);
+                sendAlerts(p, "", true);
             }
             case ModNetwork.A_DISPATCH -> {
                 if (ModNetwork.Alert.isCall(k.target())) {   // appel d'urgence du téléphone : guidage sur la carte
