@@ -119,6 +119,8 @@ public final class VieEvents {
         s.repos = Stats.clamp(s.repos - 0.08);
         s.toxines = Stats.clamp(s.toxines - 0.3);
         if (s.boostLeft > 0) { s.boostLeft -= 1; if (s.boostLeft <= 0) s.boost = 0; }
+        if (s.wheyLeft > 0) s.wheyLeft = Math.max(0, s.wheyLeft - 1);
+        if (s.creaLeft > 0) s.creaLeft = Math.max(0, s.creaLeft - 1);
         if (VieConfig.diseases()) {
             if (!s.disease.isEmpty()) {
                 s.diseaseLeft -= 1 + s.immunity() / 100.0;

@@ -8,6 +8,7 @@ public final class VieWipe {
     @SubscribeEvent
     public void onWipe(PlayerWipeEvent e) {
         VieData.get(e.server()).remove(e.player());
+        GymPass.get(e.server()).removePlayer(e.player());
         e.cleaned("Vie (santé et mode de vie)");
     }
 }

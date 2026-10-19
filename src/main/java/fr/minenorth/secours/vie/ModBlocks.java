@@ -33,6 +33,16 @@ public final class ModBlocks {
         }
     }
 
+    /** Portique d'accès et borne d'abonnement de la salle (liés à une entreprise). */
+    public static final RegistryObject<Block> GATE = BLOCKS.register("portique_salle", GymGateBlock::new);
+    public static final RegistryObject<Block> KIOSK = BLOCKS.register("borne_abonnement", GymKioskBlock::new);
+    public static final RegistryObject<Item> GATE_ITEM = ModItems.ITEMS.register("portique_salle", () -> new BlockItem(GATE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> KIOSK_ITEM = ModItems.ITEMS.register("borne_abonnement", () -> new BlockItem(KIOSK.get(), new Item.Properties()));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<GymSiteBE>> SITE_BE = BLOCK_ENTITIES.register("salle_site",
+            () -> BlockEntityType.Builder.of(GymSiteBE::new, GATE.get(), KIOSK.get()).build(null));
+
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<GymBlockEntity>> GYM_BE = BLOCK_ENTITIES.register("gym",
             () -> BlockEntityType.Builder.of(GymBlockEntity::new, GYM.stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));

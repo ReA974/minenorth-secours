@@ -212,7 +212,7 @@ public class GymBlock extends BaseEntityBlock {
         String msg;
         if (VieConfig.enabled()) {
             Stats s = Vie.stats(p);
-            double gain = kind.gain * Math.max(0.25, 1.15 - s.forme / 100.0);
+            double gain = kind.gain * Math.max(0.25, 1.15 - s.forme / 100.0) * (1 + (s.wheyLeft > 0 ? 0.4 : 0) + (s.creaLeft > 0 ? 0.25 : 0));
             if (s.hourGain + gain <= VieConfig.trainMaxHour()) {
                 s.forme = Stats.clamp(s.forme + gain);
                 s.hourGain += gain;

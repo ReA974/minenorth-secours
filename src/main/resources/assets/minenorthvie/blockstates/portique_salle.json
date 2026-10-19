@@ -1,0 +1,34 @@
+{
+ "variants": {
+  "facing=north,open=false": {
+   "model": "minenorthvie:block/portique_salle_ferme"
+  },
+  "facing=north,open=true": {
+   "model": "minenorthvie:block/portique_salle_ouvert"
+  },
+  "facing=east,open=false": {
+   "model": "minenorthvie:block/portique_salle_ferme",
+   "y": 90
+  },
+  "facing=east,open=true": {
+   "model": "minenorthvie:block/portique_salle_ouvert",
+   "y": 90
+  },
+  "facing=south,open=false": {
+   "model": "minenorthvie:block/portique_salle_ferme",
+   "y": 180
+  },
+  "facing=south,open=true": {
+   "model": "minenorthvie:block/portique_salle_ouvert",
+   "y": 180
+  },
+  "facing=west,open=false": {
+   "model": "minenorthvie:block/portique_salle_ferme",
+   "y": 270
+  },
+  "facing=west,open=true": {
+   "model": "minenorthvie:block/portique_salle_ouvert",
+   "y": 270
+  }
+ }
+}

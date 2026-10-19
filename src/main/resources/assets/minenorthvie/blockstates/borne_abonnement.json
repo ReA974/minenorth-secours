@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minenorthvie:block/borne_abonnement"
+  },
+  "facing=east": {
+   "model": "minenorthvie:block/borne_abonnement",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minenorthvie:block/borne_abonnement",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minenorthvie:block/borne_abonnement",
+   "y": 270
+  }
+ }
+}

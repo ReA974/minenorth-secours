@@ -13,5 +13,11 @@
   "block.minenorthvie.velo_appartement": "Vélo d'appartement",
   "item.minenorthvie.velo_appartement": "Vélo d'appartement",
   "block.minenorthvie.halteres": "Rack d'haltères",
-  "item.minenorthvie.halteres": "Rack d'haltères"
+  "item.minenorthvie.halteres": "Rack d'haltères",
+  "block.minenorthvie.portique_salle": "Portique de salle de sport",
+  "item.minenorthvie.portique_salle": "Portique de salle de sport",
+  "block.minenorthvie.borne_abonnement": "Borne d'abonnement",
+  "item.minenorthvie.borne_abonnement": "Borne d'abonnement",
+  "item.minenorthvie.whey": "Whey protéine",
+  "item.minenorthvie.creatine": "Créatine"
 }
