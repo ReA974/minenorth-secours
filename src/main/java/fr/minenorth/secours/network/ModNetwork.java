@@ -23,7 +23,7 @@ public final class ModNetwork {
     public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8, A_PHONE = 9;
     public static final UUID NONE = new UUID(0, 0);
 
-    private static final String PROTOCOL = "5";
+    private static final String PROTOCOL = "6";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthSecours.MOD_ID, "network"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
     private static int id = 0;
@@ -37,6 +37,7 @@ public final class ModNetwork {
         CHANNEL.registerMessage(id++, DefibStartPacket.class, DefibStartPacket::encode, DefibStartPacket::decode, DefibStartPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(id++, DefibResultPacket.class, DefibResultPacket::encode, DefibResultPacket::decode, DefibResultPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(id++, WakePacket.class, WakePacket::encode, WakePacket::decode, WakePacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        id = PhoneNet.register(CHANNEL, id);   // application « téléphone » (état + ouverture)
     }
 
     public static void send(ServerPlayer p, Object packet) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), packet); }
