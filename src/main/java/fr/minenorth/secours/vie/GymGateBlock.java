@@ -42,10 +42,10 @@ public class GymGateBlock extends BaseEntityBlock {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
     // Axe de passage = Z quand le portique regarde nord / sud ; X quand il regarde est / ouest.
-    private static final VoxelShape PILLARS_Z = Shapes.or(Block.box(0, 0, 1, 3, 24, 15), Block.box(13, 0, 1, 16, 24, 15));
-    private static final VoxelShape PILLARS_X = Shapes.or(Block.box(1, 0, 0, 15, 24, 3), Block.box(1, 0, 13, 15, 24, 16));
-    private static final VoxelShape CLOSED_Z = Shapes.or(PILLARS_Z, Block.box(3, 0, 7, 13, 24, 9));
-    private static final VoxelShape CLOSED_X = Shapes.or(PILLARS_X, Block.box(7, 0, 3, 9, 24, 13));
+    private static final VoxelShape PILLARS_Z = Shapes.or(Block.box(0, 0, 1, 2, 24, 15), Block.box(14, 0, 1, 16, 24, 15));
+    private static final VoxelShape PILLARS_X = Shapes.or(Block.box(1, 0, 0, 15, 24, 2), Block.box(1, 0, 14, 15, 24, 16));
+    private static final VoxelShape CLOSED_Z = Shapes.or(PILLARS_Z, Block.box(2, 0, 7, 14, 24, 9));
+    private static final VoxelShape CLOSED_X = Shapes.or(PILLARS_X, Block.box(7, 0, 2, 9, 24, 14));
 
     public GymGateBlock() {
         super(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0f, 8.0f).sound(SoundType.METAL).noOcclusion());
@@ -108,15 +108,27 @@ public class GymGateBlock extends BaseEntityBlock {
     @SuppressWarnings("deprecation")
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!state.getValue(OPEN)) return;
-        AABB zone = new AABB(pos).inflate(1.1, 0.6, 1.1);
+        AABB zone = new AABB(pos).inflate(2.0, 1.5, 2.0);
         for (Player p : level.getEntitiesOfClass(Player.class, zone)) {
-            if (p instanceof ServerPlayer sp && level.getBlockEntity(pos) instanceof GymSiteBE be && GymPass.allowed(sp, be.company)) {
+            if (p instanceof ServerPlayer sp && inCorridor(state, pos, sp) && level.getBlockEntity(pos) instanceof GymSiteBE be && GymPass.allowed(sp, be.company)) {
                 level.scheduleTick(pos, this, 10);   // quelqu'un d'autorisé est encore là
                 return;
             }
         }
         level.setBlock(pos, state.setValue(OPEN, false), 3);
         level.playSound(null, pos, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 0.6f, 1.5f);
+    }
+
+    /**
+     * Le joueur est-il DANS le couloir du portique ? (dans l'axe du passage : 1,6 bloc avant et après le portique ; dans la largeur du couloir ;
+     * à hauteur du portique). Seuls les joueurs qui se présentent vraiment devant l'ouvrent : pas ceux qui passent à côté.
+     */
+    public static boolean inCorridor(BlockState st, BlockPos pos, net.minecraft.world.entity.Entity p) {
+        boolean z = st.getValue(FACING).getAxis() == Direction.Axis.Z;
+        double along = z ? p.getZ() - (pos.getZ() + 0.5) : p.getX() - (pos.getX() + 0.5);
+        double across = z ? p.getX() - (pos.getX() + 0.5) : p.getZ() - (pos.getZ() + 0.5);
+        double dy = p.getY() - pos.getY();
+        return Math.abs(across) <= 0.55 && Math.abs(along) <= 1.6 && dy > -1.0 && dy < 1.6;
     }
 
     public static void deny(ServerPlayer p, int company) {

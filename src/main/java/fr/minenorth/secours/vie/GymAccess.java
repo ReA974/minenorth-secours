@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Ouvre les portiques de la salle devant les joueurs autorisés (vérification serveur, toutes les 8 ticks, 5 x 3 x 5 blocs autour du joueur). */
+/** Ouvre les portiques de la salle devant les joueurs autorisés (vérification serveur, toutes les 8 ticks, uniquement dans le couloir de chaque portique). */
 @Mod.EventBusSubscriber(modid = fr.minenorth.secours.MineNorthSecours.MOD_ID)
 public final class GymAccess {
     private GymAccess() {}
@@ -24,12 +24,12 @@ public final class GymAccess {
         if (e.phase != TickEvent.Phase.END || !(e.player instanceof ServerPlayer p) || p.tickCount % 8 != 0 || p.isSpectator()) return;
         ServerLevel level = p.serverLevel();
         BlockPos c = p.blockPosition();
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     BlockPos pos = c.offset(dx, dy, dz);
                     BlockState st = level.getBlockState(pos);
-                    if (!(st.getBlock() instanceof GymGateBlock) || !(level.getBlockEntity(pos) instanceof GymSiteBE be)) continue;
+                    if (!(st.getBlock() instanceof GymGateBlock) || !GymGateBlock.inCorridor(st, pos, p) || !(level.getBlockEntity(pos) instanceof GymSiteBE be)) continue;
                     if (GymPass.allowed(p, be.company)) {
                         GymGateBlock.open(level, pos, st);
                     } else {
