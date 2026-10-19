@@ -43,6 +43,21 @@ public class GymPass extends SavedData {
         return until;
     }
 
+    /** Abonnés encore valides d'une salle (UUID -> date de fin). */
+    public Map<UUID, Long> entries(int company) {
+        Map<UUID, Long> out = new HashMap<>();
+        Map<UUID, Long> m = passes.get(company);
+        if (m != null) { long now = System.currentTimeMillis(); m.forEach((k, v) -> { if (v > now) out.put(k, v); }); }
+        return out;
+    }
+
+    public boolean remove(int company, UUID id) {
+        Map<UUID, Long> m = passes.get(company);
+        boolean r = m != null && m.remove(id) != null;
+        if (r) setDirty();
+        return r;
+    }
+
     public void removePlayer(UUID id) {
         boolean changed = false;
         for (Map<UUID, Long> m : passes.values()) changed |= m.remove(id) != null;

@@ -80,7 +80,10 @@ public class GymBlock extends BaseEntityBlock {
         final VoxelShape collision;
 
         /** Le tapis et le banc occupent 2 blocs de long (le modèle de la case principale déborde sur la 2e). */
-        public boolean isLong() { return this == TREADMILL || this == BENCH; }
+        public boolean isLong() { return this == TREADMILL || this == BENCH || this == BAG; }
+
+        /** Le sac de frappe occupe 2 blocs de HAUT (la 2e case est au-dessus) ; le tapis et le banc 2 blocs de long. */
+        public boolean isTall() { return this == BAG; }
 
         Kind(String label, double gain, SoundEvent sound, ParticleOptions particle, double dx, double dz, double y, boolean seated, boolean lying,
              boolean front, int swing, double exitDx, double exitDz, VoxelShape collision) {
@@ -121,7 +124,7 @@ public class GymBlock extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
         Direction f = ctx.getHorizontalDirection().getOpposite();
         if (kind.isLong()) {
-            BlockPos ext = ctx.getClickedPos().relative(f.getOpposite());
+            BlockPos ext = ctx.getClickedPos().relative(kind.isTall() ? Direction.UP : f.getOpposite());
             if (!ctx.getLevel().getWorldBorder().isWithinBounds(ext) || !ctx.getLevel().getBlockState(ext).canBeReplaced(ctx)) return null;
         }
         return defaultBlockState().setValue(FACING, f);
@@ -132,19 +135,20 @@ public class GymBlock extends BaseEntityBlock {
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (!level.isClientSide && kind.isLong() && !state.getValue(EXT)) {
-            level.setBlock(pos.relative(state.getValue(FACING).getOpposite()), state.setValue(EXT, true).setValue(ANIM, 0), 3);
+            level.setBlock(pos.relative(kind.isTall() ? Direction.UP : state.getValue(FACING).getOpposite()), state.setValue(EXT, true).setValue(ANIM, 0), 3);
         }
     }
 
     /** Case principale d'une extension (la partie visible et active). */
-    private static BlockPos mainPos(BlockPos pos, BlockState s) { return pos.relative(s.getValue(FACING)); }
+    private BlockPos mainPos(BlockPos pos, BlockState s) { return pos.relative(kind.isTall() ? Direction.DOWN : s.getValue(FACING)); }
 
     /** Une moitié disparaît : l'autre aussi (sans doublon d'objet). */
     @Override
     @SuppressWarnings("deprecation")
     public BlockState updateShape(BlockState state, Direction dir, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (kind.isLong()) {
-            Direction partner = state.getValue(EXT) ? state.getValue(FACING) : state.getValue(FACING).getOpposite();
+            Direction partner = kind.isTall() ? (state.getValue(EXT) ? Direction.DOWN : Direction.UP)
+                    : state.getValue(EXT) ? state.getValue(FACING) : state.getValue(FACING).getOpposite();
             if (dir == partner && !(neighbor.is(this) && neighbor.getValue(EXT) != state.getValue(EXT))) return Blocks.AIR.defaultBlockState();
         }
         return super.updateShape(state, dir, neighbor, level, pos, neighborPos);

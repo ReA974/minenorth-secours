@@ -35,7 +35,7 @@ import java.util.UUID;
 
 /**
  * Borne d'abonnement de la salle de sport. Clic droit : affiche le tarif et l'abonnement du joueur ; accroupi + clic droit : achète (virement du
- * compte du joueur vers le compte de l'entreprise de la salle, rien ne passe par le trésor). Le prix, la durée et l'entreprise se règlent avec /salle.
+ * compte du joueur vers le compte de l'entreprise de la salle, rien ne passe par le trésor). Le patron / les gérants (ou un opérateur) règlent la salle par un écran : accroupi + clic droit.
  */
 public class GymKioskBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -78,8 +78,9 @@ public class GymKioskBlock extends BaseEntityBlock {
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (level.isClientSide) return InteractionResult.SUCCESS;
         if (!(player instanceof ServerPlayer p) || !(level.getBlockEntity(pos) instanceof GymSiteBE be)) return InteractionResult.PASS;
+        if (p.isShiftKeyDown() && GymAdmin.canManage(p, be)) { GymAdmin.open(p, be); return InteractionResult.SUCCESS; }
         if (be.company <= 0) {
-            say(p, "§7Borne non configurée : le patron de la salle doit la lier à son entreprise (/salle lier).");
+            say(p, "§7Borne non configurée : le patron de la salle doit la lier à son entreprise (accroupi + clic droit).");
             return InteractionResult.SUCCESS;
         }
         String name = MineNorth.companies().name(p.server, be.company);

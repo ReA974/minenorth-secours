@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 public final class VieNet {
     private VieNet() {}
 
-    private static final String PROTOCOL = "1";
+    private static final String PROTOCOL = "2";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthVie.NAMESPACE, "network"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
     private static final Map<UUID, Long> LAST = new HashMap<>();
@@ -27,9 +27,11 @@ public final class VieNet {
     public static void register() {
         CHANNEL.registerMessage(0, Request.class, Request::encode, Request::decode, Request::handle);
         CHANNEL.registerMessage(1, State.class, State::encode, State::decode, State::handle);
+        CHANNEL.registerMessage(2, GymView.class, GymView::encode, GymView::decode, GymView::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(3, GymAction.class, GymAction::encode, GymAction::decode, GymAction::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
     }
 
-    static void forget(UUID id) { LAST.remove(id); }
+    static void forget(UUID id) { LAST.remove(id); GymAdmin.forget(id); }
 
     /** Envoie son état au joueur ; open = ouvre l'écran, sinon met seulement à jour l'écran ouvert. */
     public static void send(ServerPlayer p, boolean open) {
@@ -74,6 +76,51 @@ public final class VieNet {
         }
         static void handle(State s, Supplier<NetworkEvent.Context> c) {
             c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> fr.minenorth.secours.vie.client.SanteScreen.receive(s)));
+            c.get().setPacketHandled(true);
+        }
+    }
+
+    /** Client -> serveur : action sur un portique / une borne (le serveur revérifie tout). */
+    public record GymAction(net.minecraft.core.BlockPos pos, int action, int a, int b, UUID uuid) {
+        static void encode(GymAction m, FriendlyByteBuf b) { b.writeBlockPos(m.pos); b.writeVarInt(m.action); b.writeInt(m.a); b.writeInt(m.b); b.writeUUID(m.uuid); }
+        static GymAction decode(FriendlyByteBuf b) { return new GymAction(b.readBlockPos(), b.readVarInt(), b.readInt(), b.readInt(), b.readUUID()); }
+        static void handle(GymAction m, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> {
+                ServerPlayer p = c.get().getSender();
+                if (p != null) GymAdmin.handle(p, m);
+            });
+            c.get().setPacketHandled(true);
+        }
+    }
+
+    /** Serveur -> client : réglages et abonnés d'un équipement de salle. */
+    public record GymView(net.minecraft.core.BlockPos pos, int company, String companyName, int priceCents, int days, String msg,
+                          java.util.List<Company> companies, java.util.List<Sub> subs, java.util.List<Near> near) {
+        public record Company(int id, String name) {}
+        public record Sub(UUID id, String name, long end) {}
+        public record Near(UUID id, String name) {}
+
+        static void encode(GymView v, FriendlyByteBuf b) {
+            b.writeBlockPos(v.pos); b.writeVarInt(v.company); b.writeUtf(v.companyName, 64); b.writeVarInt(v.priceCents); b.writeVarInt(v.days); b.writeUtf(v.msg, 160);
+            b.writeVarInt(v.companies.size());
+            for (Company c : v.companies) { b.writeVarInt(c.id); b.writeUtf(c.name, 64); }
+            b.writeVarInt(v.subs.size());
+            for (Sub s : v.subs) { b.writeUUID(s.id); b.writeUtf(s.name, 40); b.writeLong(s.end); }
+            b.writeVarInt(v.near.size());
+            for (Near n : v.near) { b.writeUUID(n.id); b.writeUtf(n.name, 40); }
+        }
+        static GymView decode(FriendlyByteBuf b) {
+            var pos = b.readBlockPos(); int company = b.readVarInt(); String cn = b.readUtf(64); int price = b.readVarInt(), days = b.readVarInt(); String msg = b.readUtf(160);
+            java.util.List<Company> cs = new java.util.ArrayList<>(); int n = Math.min(b.readVarInt(), 64);
+            for (int i = 0; i < n; i++) cs.add(new Company(b.readVarInt(), b.readUtf(64)));
+            java.util.List<Sub> ss = new java.util.ArrayList<>(); n = Math.min(b.readVarInt(), 128);
+            for (int i = 0; i < n; i++) ss.add(new Sub(b.readUUID(), b.readUtf(40), b.readLong()));
+            java.util.List<Near> ns = new java.util.ArrayList<>(); n = Math.min(b.readVarInt(), 64);
+            for (int i = 0; i < n; i++) ns.add(new Near(b.readUUID(), b.readUtf(40)));
+            return new GymView(pos, company, cn, price, days, msg, cs, ss, ns);
+        }
+        static void handle(GymView v, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> fr.minenorth.secours.vie.client.GymAdminScreen.receive(v)));
             c.get().setPacketHandled(true);
         }
     }

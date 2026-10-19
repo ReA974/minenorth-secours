@@ -85,6 +85,16 @@ public class GymGateBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new GymSiteBE(pos, state); }
 
+    @Override
+    @SuppressWarnings("deprecation")
+    public net.minecraft.world.InteractionResult use(BlockState state, net.minecraft.world.level.Level level, BlockPos pos, Player player,
+                                                      net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || !player.isShiftKeyDown()) return net.minecraft.world.InteractionResult.PASS;
+        if (level.isClientSide) return net.minecraft.world.InteractionResult.SUCCESS;
+        if (player instanceof ServerPlayer p && level.getBlockEntity(pos) instanceof GymSiteBE be && GymAdmin.canManage(p, be)) GymAdmin.open(p, be);
+        return net.minecraft.world.InteractionResult.SUCCESS;
+    }
+
     /** Appelé par GymAccess quand un joueur autorisé s'approche : ouvre et programme la fermeture. */
     public static void open(ServerLevel level, BlockPos pos, BlockState state) {
         if (!state.getValue(OPEN)) {
