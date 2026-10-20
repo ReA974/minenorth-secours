@@ -1,0 +1,112 @@
+{
+ "variants": {
+  "anim=0,ext=false,facing=north": {
+   "model": "minenorthvie:block/machine_dos_0"
+  },
+  "anim=0,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=north": {
+   "model": "minenorthvie:block/machine_dos_1"
+  },
+  "anim=1,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=north": {
+   "model": "minenorthvie:block/machine_dos_2"
+  },
+  "anim=2,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=north": {
+   "model": "minenorthvie:block/machine_dos_3"
+  },
+  "anim=3,ext=true,facing=north": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=0,ext=false,facing=east": {
+   "model": "minenorthvie:block/machine_dos_0",
+   "y": 90
+  },
+  "anim=0,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=east": {
+   "model": "minenorthvie:block/machine_dos_1",
+   "y": 90
+  },
+  "anim=1,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=east": {
+   "model": "minenorthvie:block/machine_dos_2",
+   "y": 90
+  },
+  "anim=2,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=east": {
+   "model": "minenorthvie:block/machine_dos_3",
+   "y": 90
+  },
+  "anim=3,ext=true,facing=east": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=0,ext=false,facing=south": {
+   "model": "minenorthvie:block/machine_dos_0",
+   "y": 180
+  },
+  "anim=0,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=south": {
+   "model": "minenorthvie:block/machine_dos_1",
+   "y": 180
+  },
+  "anim=1,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=south": {
+   "model": "minenorthvie:block/machine_dos_2",
+   "y": 180
+  },
+  "anim=2,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=south": {
+   "model": "minenorthvie:block/machine_dos_3",
+   "y": 180
+  },
+  "anim=3,ext=true,facing=south": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=0,ext=false,facing=west": {
+   "model": "minenorthvie:block/machine_dos_0",
+   "y": 270
+  },
+  "anim=0,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=1,ext=false,facing=west": {
+   "model": "minenorthvie:block/machine_dos_1",
+   "y": 270
+  },
+  "anim=1,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=2,ext=false,facing=west": {
+   "model": "minenorthvie:block/machine_dos_2",
+   "y": 270
+  },
+  "anim=2,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  },
+  "anim=3,ext=false,facing=west": {
+   "model": "minenorthvie:block/machine_dos_3",
+   "y": 270
+  },
+  "anim=3,ext=true,facing=west": {
+   "model": "minenorthvie:block/gym_ext"
+  }
+ }
+}

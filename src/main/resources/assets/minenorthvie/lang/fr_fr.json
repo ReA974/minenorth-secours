@@ -19,5 +19,7 @@
   "block.minenorthvie.borne_abonnement": "Borne d'abonnement",
   "item.minenorthvie.borne_abonnement": "Borne d'abonnement",
   "item.minenorthvie.whey": "Whey protéine",
-  "item.minenorthvie.creatine": "Créatine"
+  "item.minenorthvie.creatine": "Créatine",
+  "block.minenorthvie.machine_dos": "Machine de tirage (dos)",
+  "item.minenorthvie.machine_dos": "Machine de tirage (dos)"
 }

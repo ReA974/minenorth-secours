@@ -23,7 +23,7 @@ public final class ModBlocks {
     public static final List<RegistryObject<Item>> GYM_ITEMS = new ArrayList<>();
 
     static {
-        String[] ids = {"tapis_de_course", "banc_musculation", "sac_de_frappe", "velo_appartement", "halteres"};
+        String[] ids = {"tapis_de_course", "banc_musculation", "sac_de_frappe", "velo_appartement", "halteres", "machine_dos"};
         GymBlock.Kind[] kinds = GymBlock.Kind.values();
         for (int i = 0; i < ids.length; i++) {
             GymBlock.Kind k = kinds[i];

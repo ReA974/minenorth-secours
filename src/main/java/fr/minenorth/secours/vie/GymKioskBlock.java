@@ -35,7 +35,7 @@ import java.util.UUID;
 
 /**
  * Borne d'abonnement de la salle de sport. Clic droit : affiche le tarif et l'abonnement du joueur ; accroupi + clic droit : achète (virement du
- * compte du joueur vers le compte de l'entreprise de la salle, rien ne passe par le trésor). Le patron / les gérants (ou un opérateur) règlent la salle par un écran : accroupi + clic droit.
+ * compte du joueur vers le compte de l'entreprise de la salle, rien ne passe par le trésor). Le patron / les gérants (ou un opérateur) règlent la salle par un écran : accroupi + clic droit main vide.
  */
 public class GymKioskBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -78,7 +78,9 @@ public class GymKioskBlock extends BaseEntityBlock {
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (level.isClientSide) return InteractionResult.SUCCESS;
         if (!(player instanceof ServerPlayer p) || !(level.getBlockEntity(pos) instanceof GymSiteBE be)) return InteractionResult.PASS;
-        if (p.isShiftKeyDown() && GymAdmin.canManage(p, be)) { GymAdmin.open(p, be); return InteractionResult.SUCCESS; }
+        boolean manager = GymAdmin.canManage(p, be);
+        // gérant / OP : accroupi + main vide = réglages ; accroupi avec un objet en main (ou borne pas encore liée) = achat
+        if (p.isShiftKeyDown() && manager && (p.getMainHandItem().isEmpty() || be.company <= 0)) { GymAdmin.open(p, be); return InteractionResult.SUCCESS; }
         if (be.company <= 0) {
             say(p, "§7Borne non configurée : le patron de la salle doit la lier à son entreprise (accroupi + clic droit).");
             return InteractionResult.SUCCESS;
@@ -89,7 +91,7 @@ public class GymKioskBlock extends BaseEntityBlock {
         long end = passes.expiry(be.company, p.getUUID());
         String mine = end > System.currentTimeMillis() ? " §7(le tien court jusqu'au " + new SimpleDateFormat("dd/MM/yyyy").format(new Date(end)) + ")" : "";
         if (!p.isShiftKeyDown()) {
-            say(p, "§e" + name + " : abonnement " + be.days + " jours, " + euros(be.priceCents) + ". §fAccroupi + clic droit pour acheter." + mine);
+            say(p, "§e" + name + " : abonnement " + be.days + " jours, " + euros(be.priceCents) + ". §fAccroupi + clic droit pour acheter" + (manager ? " (un objet en main ; main vide = réglages)" : "") + "." + mine);
             return InteractionResult.SUCCESS;
         }
         UUID account = account(p, be.company);
