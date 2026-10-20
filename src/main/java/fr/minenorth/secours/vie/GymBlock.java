@@ -68,7 +68,7 @@ public class GymBlock extends BaseEntityBlock {
         BAG("Sac de frappe", 2.0, SoundEvents.PLAYER_ATTACK_STRONG, ParticleTypes.CRIT, 0, -0.65, 0, false, false, false, 6, 0, 0, Block.box(4, 0, 4, 12, 16, 12)),
         BIKE("Vélo d'appartement", 2.0, SoundEvents.NOTE_BLOCK_BASEDRUM.value(), ParticleTypes.SPLASH, 0, 0.22, 0.63, true, false, true, 0, 1.0, 0, Block.box(2, 0, 2, 14, 10, 14)),
         DUMBBELLS("Rack d'haltères", 1.5, SoundEvents.ANVIL_LAND, ParticleTypes.CRIT, 0, -0.85, 0, false, false, false, 14, 0, 0, Block.box(0, 0, 3, 16, 10, 13)),
-        BACK("Machine de tirage (dos)", 2.2, SoundEvents.ANVIL_PLACE, ParticleTypes.CRIT, 0, 0.1, 0.57, true, false, true, 0, 1.0, 0, Block.box(0, 0, 0, 16, 16, 16));
+        BACK("Machine de tirage (dos)", 2.2, SoundEvents.ANVIL_PLACE, ParticleTypes.CRIT, 0, 0.36, 0.32, true, false, true, 0, 1.2, 0, Block.box(0, 0, 0, 16, 16, 16));
 
         public final String label;
         final double gain;
