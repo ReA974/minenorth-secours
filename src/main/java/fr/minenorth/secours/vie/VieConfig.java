@@ -66,6 +66,62 @@ public final class VieConfig {
         try { return s.get(); } catch (IllegalStateException e) { return def; }
     }
 
+    // ------------------------------------------------------------------ panneau admin (réglages en direct)
+
+    /** Réglages modifiables : clé, libellé, type (b/i/d), min, max, pas. */
+    private static final Object[][] ADMIN = {
+            {"actif", "Mod Santé actif", "b", 0, 1, 1}, {"maladies", "Maladies activées", "b", 0, 1, 1},
+            {"contagion", "Contagion entre joueurs", "b", 0, 1, 1}, {"maladiesRudes", "Maladies pénalisantes", "b", 0, 1, 1},
+            {"guerisonALaMort", "La mort guérit la maladie", "b", 0, 1, 1}, {"perteFormeMort", "Forme perdue à la mort (0,1 = 10 %)", "d", 0, 1, 0.05},
+            {"vitesseCourse", "Bonus de vitesse de course", "d", 0, 0.5, 0.02}, {"enduranceCourse", "Endurance en course", "d", 0, 0.9, 0.05},
+            {"vieSupplementaire", "Vie supplémentaire (2 = 1 cœur)", "d", 0, 20, 1}, {"vieEnMoinsMalade", "Vie en moins si grippe", "i", 0, 10, 1},
+            {"gainPar100Blocs", "Forme gagnée par 100 blocs", "d", 0, 20, 0.5}, {"gainMaxParHeure", "Forme max gagnée par heure", "d", 1, 200, 5},
+            {"perteParMinute", "Forme perdue par minute", "d", 0, 5, 0.01}, {"seuilImmunite", "Seuil d'immunité", "i", 1, 100, 5},
+            {"minutesEntreRisques", "Minutes entre deux risques", "i", 1, 120, 5}, {"chanceDeBase", "Chance de base de tomber malade", "d", 0, 1, 0.01}};
+
+    private static ForgeConfigSpec.ConfigValue<?> adminValue(String key) {
+        return switch (key) {
+            case "actif" -> ENABLED; case "maladies" -> DISEASES; case "contagion" -> CONTAGION; case "maladiesRudes" -> HARSH;
+            case "guerisonALaMort" -> CURE_ON_DEATH; case "perteFormeMort" -> DEATH_LOSS; case "vitesseCourse" -> SPRINT_BONUS;
+            case "enduranceCourse" -> SPRINT_STAMINA; case "vieSupplementaire" -> HEALTH_BONUS; case "vieEnMoinsMalade" -> SICK_PENALTY_HP;
+            case "gainPar100Blocs" -> TRAIN_GAIN; case "gainMaxParHeure" -> TRAIN_MAX_HOUR; case "perteParMinute" -> DECAY_FORME;
+            case "seuilImmunite" -> IMMUNE_THRESHOLD; case "minutesEntreRisques" -> DISEASE_CHECK_MIN; case "chanceDeBase" -> DISEASE_BASE;
+            default -> null;
+        };
+    }
+
+    /** Lignes « clé 	 libellé 	 type 	 valeur 	 min 	 max 	 pas ». */
+    public static List<String> adminLines() {
+        List<String> out = new java.util.ArrayList<>();
+        for (Object[] r : ADMIN) {
+            Object v = val(() -> adminValue((String) r[0]).get(), null);
+            if (v == null) continue;
+            double d = v instanceof Boolean b ? (b ? 1 : 0) : ((Number) v).doubleValue();
+            out.add(r[0] + "	" + r[1] + "	" + r[2] + "	" + d + "	" + r[3] + "	" + r[4] + "	" + r[5]);
+        }
+        return out;
+    }
+
+    /** Applique un réglage (borné) et l'enregistre ; renvoie le libellé et la valeur, ou null si la clé ou la config est invalide. */
+    @SuppressWarnings("unchecked")
+    public static String adminSet(String key, double value) {
+        for (Object[] r : ADMIN) {
+            if (!r[0].equals(key)) continue;
+            ForgeConfigSpec.ConfigValue<Object> cv = (ForgeConfigSpec.ConfigValue<Object>) adminValue(key);
+            if (cv == null || Double.isNaN(value) || Double.isInfinite(value)) return null;
+            double v = Math.max(((Number) r[3]).doubleValue(), Math.min(((Number) r[4]).doubleValue(), value));
+            try {
+                Object o = r[2].equals("b") ? (Object) (v >= 0.5) : r[2].equals("i") ? (Object) (int) Math.round(v) : (Object) (Math.round(v * 1000) / 1000.0);
+                cv.set(o);
+                cv.save();
+                return r[1] + " : " + o;
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     public static boolean enabled() { return val(ENABLED::get, true); }
     public static boolean diseases() { return val(DISEASES::get, true); }
     public static boolean contagion() { return val(CONTAGION::get, false); }

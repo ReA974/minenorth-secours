@@ -218,6 +218,19 @@ public final class SecoursConfig {
         return ok;
     }
 
+    /** Écrit la configuration courante sur le disque (serveur dédié seulement) ; utilisé par le panneau admin. */
+    public static boolean save() {
+        if (net.minecraftforge.fml.loading.FMLEnvironment.dist != net.minecraftforge.api.distmarker.Dist.DEDICATED_SERVER) return true;
+        try {
+            Path f = FMLPaths.CONFIGDIR.get().resolve("minenorth_secours.json");
+            Files.createDirectories(f.getParent());
+            Files.writeString(f, GSON.toJson(current), StandardCharsets.UTF_8);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static long cents(double euros) { return Math.max(0, Math.round(euros * 100.0)); }
     public static long ms(double minutes) { return Math.max(0, Math.round(minutes * 60_000.0)); }
 }
