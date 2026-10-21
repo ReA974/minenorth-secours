@@ -10,11 +10,11 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
-/** Touche H : ouvre l'écran Santé. */
+/** Écran Santé : plus de touche par défaut (H sert aux emotes) ; la touche reste assignable dans les contrôles, et /sante ouvre l'écran. */
 public final class ClientEvents {
     private ClientEvents() {}
 
-    public static final KeyMapping KEY = new KeyMapping("key.minenorthvie.sante", GLFW.GLFW_KEY_H, "key.categories.minenorthvie");
+    public static final KeyMapping KEY = new KeyMapping("key.minenorthvie.sante", com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, "key.categories.minenorthvie");
 
     @Mod.EventBusSubscriber(modid = fr.minenorth.secours.MineNorthSecours.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static final class Mod_ {
