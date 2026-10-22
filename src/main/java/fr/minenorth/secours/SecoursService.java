@@ -1125,6 +1125,7 @@ public final class SecoursService {
             case ModNetwork.A_ROSTER -> { if (rank == SecoursData.CHEF) sendRoster(p, "", true); }
             case ModNetwork.A_FILE -> sendFile(p, k.a());
             case ModNetwork.A_DUTY -> {
+                if (onDuty(p) && !fr.minenorth.secours.compat.CasierHook.allowLeave(p)) { sendAlerts(p, "Passe par ton casier : tu as encore des affaires sur toi.", false); return; }
                 boolean now = setDuty(p, !onDuty(p));
                 sendAlerts(p, now ? "Vous êtes en service : vous recevez les alertes." : "Vous êtes hors service.", true);
             }

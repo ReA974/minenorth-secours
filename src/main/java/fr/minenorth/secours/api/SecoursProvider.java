@@ -10,6 +10,7 @@ public final class SecoursProvider implements fr.minenorth.api.SecoursService {
     @Override public boolean onDuty(MinecraftServer s, UUID player) { return player != null && SecoursApi.onDuty(s, player); }
     @Override public boolean setDuty(MinecraftServer s, UUID player, boolean on) {
         net.minecraft.server.level.ServerPlayer p = player == null ? null : s.getPlayerList().getPlayer(player);
+        if (p != null && !on && fr.minenorth.secours.SecoursService.onDuty(p) && !fr.minenorth.secours.compat.CasierHook.allowLeave(p)) return true;   // casier de service
         return p != null && fr.minenorth.secours.SecoursService.setDuty(p, on);
     }
 }
