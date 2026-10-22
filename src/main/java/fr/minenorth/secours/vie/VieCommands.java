@@ -6,6 +6,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
+import fr.minenorth.secours.SecoursService;
+import fr.minenorth.secours.data.SecoursData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -25,8 +27,37 @@ public final class VieCommands {
                 s.forme, s.nutrition, s.repos, s.toxines, s.immunity(), d == null ? "" : " · " + d.label + " (" + (int) Math.ceil(s.diseaseLeft) + " min)");
     }
 
+    /** /soigner : remet un joueur à neuf (vie, faim, blessures, KO, maladie, effets négatifs, statistiques de vie). Opérateurs seulement. */
+    private static int heal(net.minecraft.commands.CommandSourceStack src, ServerPlayer p) {
+        if (SecoursData.get(p.server).peek(p.getUUID()) != null && SecoursData.get(p.server).peek(p.getUUID()).coma) SecoursService.adminRevive(p);
+        SecoursService.adminHeal(p);
+        p.setHealth(p.getMaxHealth());
+        p.getFoodData().setFoodLevel(20);
+        p.getFoodData().setSaturation(10f);
+        p.getFoodData().setExhaustion(0f);
+        p.clearFire();
+        p.setAirSupply(p.getMaxAirSupply());
+        p.fallDistance = 0;
+        for (net.minecraft.world.effect.MobEffectInstance m : new java.util.ArrayList<>(p.getActiveEffects()))
+            if (m.getEffect().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL) p.removeEffect(m.getEffect());
+        Stats st = Vie.stats(p);
+        Vie.cure(p);
+        st.toxines = 0;
+        st.nutrition = 100;
+        st.repos = 100;
+        Vie.dirty(p.server);
+        String who = p.getGameProfile().getName();
+        p.sendSystemMessage(Component.literal("§aVous avez été soigné(e) complètement par " + src.getTextName() + "."));
+        if (src.getEntity() != p) src.sendSuccess(() -> Component.literal("§a" + who + " est soigné(e) complètement."), true);
+        org.apache.logging.log4j.LogManager.getLogger("MineNorth Santé").info("/soigner : {} a soigné {}", src.getTextName(), who);
+        return 1;
+    }
+
     @SubscribeEvent
     public static void register(RegisterCommandsEvent e) {
+        e.getDispatcher().register(Commands.literal("soigner").requires(s -> s.hasPermission(2))
+                .executes(c -> heal(c.getSource(), c.getSource().getPlayerOrException()))
+                .then(Commands.argument("joueur", EntityArgument.player()).executes(c -> heal(c.getSource(), EntityArgument.getPlayer(c, "joueur")))));
         e.getDispatcher().register(Commands.literal("sante").executes(c -> { VieNet.send(c.getSource().getPlayerOrException(), true); return 1; }));
         e.getDispatcher().register(Commands.literal("vie").requires(s -> s.hasPermission(2))
                 .then(Commands.literal("voir").then(Commands.argument("joueur", EntityArgument.player()).executes(c -> {
