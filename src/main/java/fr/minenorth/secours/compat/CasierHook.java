@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.lang.reflect.Method;
 
 /**
- * Mod « Casier de service » (facultatif, lu par réflexion) : tant que le secouriste a encore des affaires étrangères sur lui,
+ * Casier de service (intégré au mod Police, lu par réflexion) : tant que le secouriste a encore des affaires étrangères sur lui,
  * il ne peut pas quitter son service par la tablette ou l'accueil, il doit passer par son casier.
  */
 public final class CasierHook {
@@ -19,7 +19,7 @@ public final class CasierHook {
         if (!looked) {
             looked = true;
             try {
-                allow = Class.forName("fr.minenorth.casier.ServiceManager").getMethod("allowLeave", ServerPlayer.class);
+                allow = Class.forName("fr.minenorth.police.casier.ServiceManager").getMethod("allowLeave", ServerPlayer.class);
             } catch (Throwable t) {
                 allow = null;
             }
