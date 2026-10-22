@@ -146,6 +146,8 @@ public final class SecoursConfig {
     /** Réveil à l'hôpital : le joueur ne peut pas s'éloigner de plus de hopital_rayon_blocs du point pendant cette durée. */
     public double hopital_duree_minutes = 5;
     public double hopital_rayon_blocs = 20;
+    /** true : les opérateurs (niveau 2+) n'ont aucune attente à l'hôpital / aux urgences. Sinon ils ont la touche « sortir maintenant ». */
+    public boolean ops_passent_attente = false;
     /** Mort avec une hémorragie grave : réveil aux urgences, immobile pendant cette durée, soigné par l'hôpital. */
     public double urgences_duree_minutes = 10;
 

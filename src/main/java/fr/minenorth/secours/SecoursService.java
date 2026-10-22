@@ -201,9 +201,12 @@ public final class SecoursService {
         Clinic c = CLINICS.get(p.getUUID());
         int care = c == null ? 0 : (int) Math.max(0, (c.endMs() - now + 999) / 1000);
         boolean rescuers = secoursOnline(p.server);
-        if (j == null) { ModNetwork.send(p, new ModNetwork.StatePacket(0, 0, false, false, 0, "", care, "", 0, rescuers)); return; }
+        SecoursData.Hold hold = SecoursData.get(p.server).holds.get(p.getUUID());
+        int holdLeft = hold == null ? 0 : (int) Math.max(0, (hold.endMs - now + 999) / 1000);
+        boolean canSkip = p.hasPermissions(2) && (hold != null || (j != null && j.coma));
+        if (j == null) { ModNetwork.send(p, new ModNetwork.StatePacket(0, 0, false, false, 0, "", care, "", 0, rescuers, holdLeft, canSkip)); return; }
         ModNetwork.send(p, new ModNetwork.StatePacket(j.level, j.healAt > 0 ? (int) Math.max(0, (j.healAt - now) / 1000) : 0, j.bleeding,
-                j.coma, j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, care, SecoursConfig.get().coma_rendu_allonge ? "" : comaPose().name(), j.zones, rescuers));
+                j.coma, j.coma ? (int) Math.max(0, (j.comaDeadline - now) / 1000) : 0, j.dispatch, care, SecoursConfig.get().coma_rendu_allonge ? "" : comaPose().name(), j.zones, rescuers, holdLeft, canSkip));
     }
 
     /** Applique le ralentissement et la pose correspondant à l'état du joueur. Sans effet si rien n'a changé. */
@@ -347,7 +350,7 @@ public final class SecoursService {
                 SecoursData.Hold h = new SecoursData.Hold();
                 h.urgent = toUrgences; h.spawn = spawn.name; h.dim = spawn.dim; h.x = spawn.x; h.y = spawn.y; h.z = spawn.z;
                 h.endMs = now + SecoursConfig.ms(toUrgences ? cfg.urgences_duree_minutes : cfg.hopital_duree_minutes);
-                if (h.endMs > now) d.holds.put(p.getUUID(), h);
+                if (h.endMs > now && !(cfg.ops_passent_attente && p.hasPermissions(2))) d.holds.put(p.getUUID(), h);
                 if (toUrgences) tellSecours(s, "§c[Secours] " + display(s, p.getUUID()) + " est arrivé aux urgences (hémorragie grave).");
             }
         }
@@ -382,6 +385,36 @@ public final class SecoursService {
         return m + " min";
     }
 
+    /** Fin de la retenue (délai écoulé, ou saut demandé par un opérateur) : même sortie dans les deux cas. */
+    private static void releaseHold(ServerPlayer p, SecoursData d, SecoursData.Hold h) {
+        d.holds.remove(p.getUUID());
+        d.setDirty();
+        if (h.urgent) {
+            p.setHealth(p.getMaxHealth());
+            d.note(p.getUUID(), "Soigné aux urgences");
+            tell(p, "§aLes urgences vous ont soigné : vous pouvez partir.");
+        } else tell(p, "§aVous pouvez quitter l'hôpital.");
+        refresh(p);
+    }
+
+    /**
+     * Outil de test des opérateurs : saute l'attente à l'hôpital / aux urgences (ou le coma). Le niveau d'opérateur est vérifié ici, côté serveur,
+     * à chaque envoi ; un joueur normal est ignoré sans réponse.
+     */
+    public static void opSkipWait(ServerPlayer p) {
+        if (!p.hasPermissions(2)) return;
+        SecoursData d = SecoursData.get(p.server);
+        SecoursData.Hold h = d.holds.get(p.getUUID());
+        if (h != null) {
+            releaseHold(p, d, h);
+            tell(p, "§7[OP] Attente à l'hôpital terminée.");
+        } else if (isComa(p)) {
+            hospital(p);
+            tell(p, "§7[OP] Réveil immédiat à l'hôpital.");
+        } else return;
+        org.apache.logging.log4j.LogManager.getLogger("MineNorth Secours").info("[OP] {} a sauté l'attente de l'hôpital", p.getGameProfile().getName());
+    }
+
     /** Chaque tick : fin de la retenue, immobilité aux urgences, rayon autour du point à l'hôpital. */
     @SubscribeEvent
     public static void holdTick(TickEvent.ServerTickEvent e) {
@@ -396,14 +429,7 @@ public final class SecoursService {
             if (p == null) continue;
             SecoursData.Hold h = en.getValue();
             if (now >= h.endMs) {
-                d.holds.remove(en.getKey());
-                d.setDirty();
-                if (h.urgent) {
-                    p.setHealth(p.getMaxHealth());
-                    d.note(p.getUUID(), "Soigné aux urgences");
-                    tell(p, "§aLes urgences vous ont soigné : vous pouvez partir.");
-                } else tell(p, "§aVous pouvez quitter l'hôpital.");
-                refresh(p);
+                releaseHold(p, d, h);
                 continue;
             }
             boolean sameDim = p.level().dimension().location().toString().equals(h.dim);

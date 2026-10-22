@@ -8,6 +8,9 @@ public final class ClientState {
     private ClientState() {}
 
     public static int level, zones;
+    /** Opérateur en attente (hôpital, urgences ou coma) : la touche « sortir maintenant » est proposée. Décidé par le serveur, jamais par le client. */
+    public static boolean canSkip;
+    private static int holdSeconds;
     /** Joueurs inconscients connus de ce client, et s'il faut les coucher nous-mêmes à l'affichage. */
     public static final java.util.Set<java.util.UUID> comaPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     public static boolean customRender = true;
@@ -18,7 +21,8 @@ public final class ClientState {
     private static int healSeconds, comaSeconds, careSeconds;
     private static long receivedAt;
 
-    public static void set(int lvl, int heal, boolean bleed, boolean isComa, int comaLeft, String unit, int care, int hitZones, boolean rescuersOn) {
+    public static void set(int lvl, int heal, boolean bleed, boolean isComa, int comaLeft, String unit, int care, int hitZones, boolean rescuersOn, int hold, boolean skip) {
+        holdSeconds = hold; canSkip = skip;
         rescuers = rescuersOn;
         zones = hitZones;
         level = lvl; healSeconds = heal; bleeding = bleed; coma = isComa; comaSeconds = comaLeft; dispatch = unit == null ? "" : unit;
@@ -28,6 +32,7 @@ public final class ClientState {
     private static int left(int seconds) { return (int) Math.max(0, seconds - (System.currentTimeMillis() - receivedAt) / 1000); }
     public static int healLeft() { return left(healSeconds); }
     public static int comaLeft() { return left(comaSeconds); }
+    public static int holdLeft() { return left(holdSeconds); }
     public static int careLeft() { return left(careSeconds); }
 
     public static String clock(int seconds) { return (seconds / 60) + ":" + String.format("%02d", seconds % 60); }

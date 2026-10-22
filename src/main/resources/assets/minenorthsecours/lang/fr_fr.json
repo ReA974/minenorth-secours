@@ -6,5 +6,6 @@
   "item.minenorthsecours.defibrillateur": "Défibrillateur",
   "itemGroup.minenorthsecours": "Secours MineNorth",
   "key.minenorthsecours.wake": "Se réveiller à l'hôpital",
+  "key.minenorthsecours.skip": "Sortir de l'hôpital maintenant (opérateurs)",
   "key.categories.minenorthsecours": "Secours MineNorth"
 }

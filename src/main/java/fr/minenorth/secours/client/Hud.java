@@ -26,6 +26,14 @@ public final class Hud {
         g.drawString(font, text, cx - font.width(text) / 2, y, color, true);
     }
 
+    /** Bouton arrondi « touche + libellé » réservé aux opérateurs (le serveur revérifie à l'envoi). */
+    private static void skipButton(GuiGraphics g, Font font, String label, int cx, int y) {
+        String text = label + "  [" + ClientKeys.skipKeyName() + "]";
+        int tw = font.width(text) + 16;
+        MineNorthStyle.rfill(g, cx - tw / 2, y, cx + tw / 2, y + 16, 5, MineNorthStyle.GREEN);
+        g.drawString(font, text, cx - tw / 2 + 8, y + 4, MineNorthStyle.WHITE, false);
+    }
+
     private static void render(GuiGraphics g, int w, int h) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
@@ -47,6 +55,7 @@ public final class Hud {
                 centered(g, font, "Appuyez sur [" + ClientKeys.wakeKeyName() + "] pour vous réveiller à l'hôpital.", w / 2, y + 42, MineNorthStyle.OK);
             }
             centered(g, font, "Réveil à l'hôpital dans " + ClientState.clock(ClientState.comaLeft()), w / 2, y + 58, MineNorthStyle.WARN);
+            if (ClientState.canSkip) skipButton(g, font, "Se réveiller maintenant (OP)", w / 2, y + 78);
             return;
         }
 
@@ -67,6 +76,14 @@ public final class Hud {
             g.fill(x, y, x + 3, y + 10, MineNorthStyle.ALERT);
             g.drawString(font, "Hémorragie — il faut un bandage", x + 7, y + 1, MineNorthStyle.ALERT, true);
             y += 12;
+        }
+        int hold = ClientState.holdLeft();
+        if (hold > 0) {
+            g.fill(x, y, x + 3, y + 10, MineNorthStyle.CYAN);
+            g.drawString(font, "Soins à l'hôpital " + ClientState.clock(hold) + " — restez près du lit", x + 7, y + 1, MineNorthStyle.CYAN, true);
+            y += 12;
+            if (ClientState.canSkip) skipButton(g, font, "Sortir de l'hôpital maintenant (OP)", x + 7 + font.width("Sortir de l'hôpital maintenant (OP)  [K]") / 2, y + 2);
+            y += 20;
         }
         int care = ClientState.careLeft();
         if (care > 0) {

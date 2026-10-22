@@ -9,7 +9,7 @@ public final class ClientNetworkHandler {
 
     public static void state(ModNetwork.StatePacket p) {
         boolean wasComa = ClientState.coma;
-        ClientState.set(p.level(), p.healSeconds(), p.bleeding(), p.coma(), p.comaSeconds(), p.dispatch(), p.careSeconds(), p.zones(), p.rescuers());
+        ClientState.set(p.level(), p.healSeconds(), p.bleeding(), p.coma(), p.comaSeconds(), p.dispatch(), p.careSeconds(), p.zones(), p.rescuers(), p.holdSeconds(), p.canSkip());
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         Pose pose = null;

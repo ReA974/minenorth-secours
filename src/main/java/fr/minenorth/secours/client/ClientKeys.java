@@ -23,8 +23,14 @@ public final class ClientKeys {
     static final KeyMapping WAKE = new KeyMapping("key.minenorthsecours.wake", KeyConflictContext.UNIVERSAL,
             InputConstants.Type.KEYSYM, InputConstants.KEY_R, "key.categories.minenorth");
 
+    /** Opérateurs : sortir de l'hôpital tout de suite (le serveur refuse tout joueur qui n'est pas opérateur). */
+    static final KeyMapping SKIP = new KeyMapping("key.minenorthsecours.skip", KeyConflictContext.UNIVERSAL,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_K, "key.categories.minenorth");
+
     @SubscribeEvent
-    public static void register(RegisterKeyMappingsEvent e) { e.register(WAKE); }
+    public static void register(RegisterKeyMappingsEvent e) { e.register(WAKE); e.register(SKIP); }
+
+    static String skipKeyName() { return SKIP.getTranslatedKeyMessage().getString(); }
 
     static String wakeKeyName() { return WAKE.getTranslatedKeyMessage().getString(); }
 
@@ -37,6 +43,9 @@ public final class ClientKeys {
             if (e.phase != TickEvent.Phase.END || Minecraft.getInstance().player == null) return;
             while (WAKE.consumeClick()) {
                 if (ClientState.coma && !ClientState.rescuers) ModNetwork.CHANNEL.sendToServer(new ModNetwork.WakePacket());
+            }
+            while (SKIP.consumeClick()) {
+                if (ClientState.canSkip) ModNetwork.CHANNEL.sendToServer(new ModNetwork.SkipWaitPacket());
             }
         }
     }
