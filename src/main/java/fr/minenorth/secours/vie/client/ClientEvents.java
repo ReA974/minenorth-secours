@@ -14,7 +14,7 @@ import org.lwjgl.glfw.GLFW;
 public final class ClientEvents {
     private ClientEvents() {}
 
-    public static final KeyMapping KEY = new KeyMapping("key.minenorthvie.sante", com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, "key.categories.minenorthvie");
+    public static final KeyMapping KEY = new KeyMapping("key.minenorthvie.sante", com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, "key.categories.minenorth");
 
     @Mod.EventBusSubscriber(modid = fr.minenorth.secours.MineNorthSecours.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static final class Mod_ {

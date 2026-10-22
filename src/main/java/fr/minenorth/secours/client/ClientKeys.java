@@ -21,7 +21,7 @@ public final class ClientKeys {
     private ClientKeys() {}
 
     static final KeyMapping WAKE = new KeyMapping("key.minenorthsecours.wake", KeyConflictContext.UNIVERSAL,
-            InputConstants.Type.KEYSYM, InputConstants.KEY_R, "key.categories.minenorthsecours");
+            InputConstants.Type.KEYSYM, InputConstants.KEY_R, "key.categories.minenorth");
 
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent e) { e.register(WAKE); }
