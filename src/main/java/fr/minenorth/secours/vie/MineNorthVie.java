@@ -26,6 +26,7 @@ public final class MineNorthVie {
         VieNet.register();
         MinecraftForge.EVENT_BUS.register(new VieEvents());
         MinecraftForge.EVENT_BUS.register(new VieWipe());
+        MinecraftForge.EVENT_BUS.register(new RestaurantHunger());
         // Config du serveur dédié seulement, dans config/ (le client ne crée aucun fichier).
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
             ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, VieConfig.SPEC, "minenorth_vie.toml");

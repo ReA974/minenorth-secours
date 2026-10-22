@@ -11,7 +11,10 @@ public final class VieConfig {
     private static final ForgeConfigSpec.BooleanValue ENABLED, DISEASES, CONTAGION, CURE_ON_DEATH, HARSH;
     private static final ForgeConfigSpec.DoubleValue SPRINT_BONUS, SPRINT_STAMINA, HEALTH_BONUS, TRAIN_GAIN, TRAIN_MAX_HOUR, DECAY_FORME, DISEASE_BASE, DEATH_LOSS;
     private static final ForgeConfigSpec.IntValue IMMUNE_THRESHOLD, DISEASE_CHECK_MIN, SICK_PENALTY_HP;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> HEALTHY, JUNK, TOXIC, RISKY;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> HEALTHY, JUNK, TOXIC, RISKY, RESTO_WORDS;
+    private static final ForgeConfigSpec.BooleanValue ADD_KALEIDO, RESTO_HUNGER;
+    private static final ForgeConfigSpec.IntValue RESTO_SECONDS, RESTO_FLOOR;
+    private static final List<String> DEF_RESTO_WORDS = List.of("restaurant", "resto", "brasserie", "bistro", "pizz", "burger", "kebab", "snack", "traiteur", "crêperie", "creperie", "cantine");
 
     private static final List<String> DEF_HEALTHY = List.of("minecraft:apple", "minecraft:carrot", "minecraft:golden_carrot", "minecraft:melon_slice",
             "minecraft:sweet_berries", "minecraft:glow_berries", "minecraft:baked_potato", "minecraft:beetroot", "minecraft:cooked_cod", "minecraft:cooked_salmon",
@@ -56,6 +59,15 @@ public final class VieConfig {
         JUNK = b.comment("Aliments gras / sucrés : dégradent l'équilibre alimentaire (avec modération, aucun effet)").defineList("gras", DEF_JUNK, o -> o instanceof String);
         TOXIC = b.comment("Substances : augmentent les toxines (drogues, alcool d'autres mods…)").defineList("toxiques", DEF_TOXIC, o -> o instanceof String);
         RISKY = b.comment("Aliments à risque : peuvent donner une intoxication alimentaire").defineList("risques", DEF_RISKY, o -> o instanceof String);
+        ADD_KALEIDO = b.comment("true : ajoute aux listes ci-dessus la cuisine et les boissons de Kaleidoscope (Cookery, Tavern, World Liquor), même si la config existait déjà")
+                .define("ajoutCuisineKaleidoscope", true);
+        b.pop();
+        b.comment("Faim rapide quand un restaurant est ouvert (entreprise dont l'activité contient un des mots-clés ; mod Entreprises facultatif)").push("restaurant");
+        RESTO_HUNGER = b.comment("true : tant qu'un joueur n'a pas mangé depuis l'ouverture d'un restaurant, sa faim monte plus vite").define("faimRapide", true);
+        RESTO_SECONDS = b.comment("Secondes entre deux points de faim perdus (plus petit = plus rapide)").defineInRange("secondesParPoint", 20, 5, 600);
+        RESTO_FLOOR = b.comment("Niveau de faim sous lequel la faim rapide s'arrête (6 ou moins empêche de courir : garder 8 ou plus)").defineInRange("faimMinimum", 8, 1, 19);
+        RESTO_WORDS = b.comment("Mots-clés de l'activité d'une entreprise considérée comme restaurant (sans tenir compte de la casse)")
+                .defineList("motsCles", DEF_RESTO_WORDS, o -> o instanceof String);
         b.pop();
         SPEC = b.build();
     }
@@ -138,8 +150,18 @@ public final class VieConfig {
     public static int immuneThreshold() { return val(IMMUNE_THRESHOLD::get, 75); }
     public static int diseaseCheckMinutes() { return val(DISEASE_CHECK_MIN::get, 10); }
     public static double diseaseBase() { return val(DISEASE_BASE::get, 0.06); }
-    @SuppressWarnings("unchecked") public static List<String> healthy() { return val(() -> (List<String>) HEALTHY.get(), DEF_HEALTHY); }
-    @SuppressWarnings("unchecked") public static List<String> junk() { return val(() -> (List<String>) JUNK.get(), DEF_JUNK); }
-    @SuppressWarnings("unchecked") public static List<String> toxic() { return val(() -> (List<String>) TOXIC.get(), DEF_TOXIC); }
-    @SuppressWarnings("unchecked") public static List<String> risky() { return val(() -> (List<String>) RISKY.get(), DEF_RISKY); }
+    private static List<String> merged(List<String> cfg, List<String> extra) {
+        if (!val(ADD_KALEIDO::get, true)) return cfg;
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>(cfg);
+        out.addAll(extra);
+        return new java.util.ArrayList<>(out);
+    }
+    @SuppressWarnings("unchecked") public static List<String> healthy() { return merged(val(() -> (List<String>) HEALTHY.get(), DEF_HEALTHY), KaleidoFoods.HEALTHY); }
+    @SuppressWarnings("unchecked") public static List<String> junk() { return merged(val(() -> (List<String>) JUNK.get(), DEF_JUNK), KaleidoFoods.JUNK); }
+    @SuppressWarnings("unchecked") public static List<String> toxic() { return merged(val(() -> (List<String>) TOXIC.get(), DEF_TOXIC), KaleidoFoods.TOXIC); }
+    @SuppressWarnings("unchecked") public static List<String> risky() { return merged(val(() -> (List<String>) RISKY.get(), DEF_RISKY), KaleidoFoods.RISKY); }
+    public static boolean restaurantHunger() { return val(RESTO_HUNGER::get, true); }
+    public static int restaurantSecondsPerPoint() { return val(RESTO_SECONDS::get, 20); }
+    public static int restaurantHungerFloor() { return val(RESTO_FLOOR::get, 8); }
+    @SuppressWarnings("unchecked") public static List<String> restaurantKeywords() { return val(() -> (List<String>) RESTO_WORDS.get(), DEF_RESTO_WORDS); }
 }
