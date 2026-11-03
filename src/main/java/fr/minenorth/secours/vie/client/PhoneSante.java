@@ -12,10 +12,11 @@ public final class PhoneSante {
 
     public static boolean visible() { return true; }
 
-    /** Clic sur l'icône : ferme le téléphone et demande l'écran Santé au serveur. */
+    /** Clic sur l'icône : demande l'état au serveur ; la réponse ouvre l'application DANS le téléphone (phone.PhoneSanteScreen). Sans le téléphone : écran Santé. */
     public static void openFromPhone() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
+        if (fr.minenorth.secours.client.PhoneAppClient.phone()) { fr.minenorth.secours.client.phone.PhoneSecours.requestSante(); return; }
         mc.setScreen(null);
         VieNet.CHANNEL.sendToServer(new VieNet.Request(true));
     }

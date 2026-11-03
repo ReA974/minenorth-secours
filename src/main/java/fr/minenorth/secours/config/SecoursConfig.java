@@ -57,18 +57,23 @@ public final class SecoursConfig {
     public double incendie_intervalle_minutes = 20;
     public int incendie_max_simultanes = 2;
     /** Rayon (blocs) autour du site où les foyers sont allumés. */
-    public int incendie_rayon = 2;
+    public int incendie_rayon = 4;
     /** Au bout de ce temps (minutes) le feu est coupé d'office, incendie raté. */
     public double incendie_duree_max_minutes = 30;
     /** Durée minimale (minutes) : tant qu'elle n'est pas écoulée, un incendie éteint trop vite reprend (jusqu'à incendie_reprises_max fois). */
     public double incendie_duree_min_minutes = 8;
     /** Nombre de foyers au départ (tirage entre min et max) ; la propagation ne dépasse jamais le max. */
-    public int incendie_foyers_min = 8;
-    public int incendie_foyers_max = 14;
-    /** Pendant la durée minimale, 1 à 2 foyers apparaissent toutes les N secondes tant que le plafond n'est pas atteint (0 = pas de propagation). */
+    public int incendie_foyers_min = 16;
+    public int incendie_foyers_max = 28;
+    /** Pendant la durée minimale, 2 à 3 foyers apparaissent toutes les N secondes tant que le plafond n'est pas atteint (0 = pas de propagation). */
     public int incendie_propagation_secondes = 45;
     /** Les foyers de propagation peuvent apparaître jusqu'à rayon + ce bonus (blocs) autour du site. */
-    public int incendie_propagation_rayon_bonus = 2;
+    public int incendie_propagation_rayon_bonus = 3;
+    /**
+     * Version des réglages de taille des incendies : 0 = fichier d'avant le 02/11 (rayon 2, 8 à 14 foyers, bonus 2). Au chargement, un fichier resté sur
+     * ces anciennes valeurs par défaut passe aux nouvelles (incendies plus grands) ; des valeurs changées à la main sont gardées.
+     */
+    public int incendie_taille_version = 0;
     /** Nombre maximal de reprises de feu quand tous les foyers sont éteints avant la durée minimale. */
     public int incendie_reprises_max = 3;
 
@@ -85,6 +90,24 @@ public final class SecoursConfig {
     public int incendie_calme_niveau_min = 2;
     /** Seuil = max(2, pompiers en service x ce nombre). Un pompier lui-même blessé compte double. */
     public int incendie_blesses_par_pompier = 2;
+
+    // --- braises : feu éteint avant incendie_duree_min_minutes => 1 à 2 points chauds cachés (fumée, caméra thermique) qui repartent s'ils ne sont pas noyés
+    public int incendie_braises_secondes = 45;
+    // --- fumée : dégâts (en demi-cœurs, toutes les 2 s) près d'un foyer sans masque ARI ; 0 = aucun
+    public double incendie_fumee_degats = 1;
+    public int incendie_fumee_rayon = 3;
+
+    // --- outils des pompiers
+    /** Lance à incendie : longueur du tuyau (blocs) depuis la bouche d'incendie ou le véhicule où elle est branchée. */
+    public int lance_longueur_tuyau = 30;
+    /** Portée du jet (blocs). */
+    public int lance_portee = 14;
+    /** Véhicules MTS acceptés pour brancher la lance : mots contenus dans le nom du véhicule (ex. « pompier », « fpt »). Vide = tout véhicule MTS. */
+    public java.util.List<String> lance_vehicules = new java.util.ArrayList<>();
+    /** Hache / halligan : une porte ne se force qu'à cette distance (blocs) d'un incendie en cours ou d'un blessé inconscient. */
+    public int forcement_rayon = 24;
+    /** true : les pompiers en service peuvent forcer une porte même sans intervention à proximité. */
+    public boolean forcement_hors_intervention = false;
 
     // --- facture envoyée au patient quand un secouriste le soigne (0 = gratuit)
     public double facture_soins_euros = 150;
@@ -200,6 +223,15 @@ public final class SecoursConfig {
         c.hemorragie_torse_multiplicateur = Math.max(1, c.hemorragie_torse_multiplicateur);
         c.hemorragie_intervalle_secondes = Math.max(1, c.hemorragie_intervalle_secondes);
         c.coma_coeurs_restants = Math.max(0.5, c.coma_coeurs_restants);
+        if (c.incendie_taille_version < 2) {
+            if (c.incendie_rayon == 2 && c.incendie_foyers_min == 8 && c.incendie_foyers_max == 14) {
+                c.incendie_rayon = d.incendie_rayon;
+                c.incendie_foyers_min = d.incendie_foyers_min;
+                c.incendie_foyers_max = d.incendie_foyers_max;
+                if (c.incendie_propagation_rayon_bonus == 2) c.incendie_propagation_rayon_bonus = d.incendie_propagation_rayon_bonus;
+            }
+            c.incendie_taille_version = 2;
+        }
         c.incendie_duree_min_minutes = Math.max(0, Math.min(c.incendie_duree_min_minutes, c.incendie_duree_max_minutes));
         c.incendie_foyers_min = Math.max(1, c.incendie_foyers_min);
         c.incendie_foyers_max = Math.max(c.incendie_foyers_min, c.incendie_foyers_max);
@@ -211,6 +243,13 @@ public final class SecoursConfig {
         c.incendie_prime_presence_secondes = Math.max(0, c.incendie_prime_presence_secondes);
         c.incendie_calme_niveau_min = Math.max(1, Math.min(3, c.incendie_calme_niveau_min));
         c.incendie_blesses_par_pompier = Math.max(1, c.incendie_blesses_par_pompier);
+        c.incendie_braises_secondes = Math.max(10, c.incendie_braises_secondes);
+        c.incendie_fumee_degats = Math.max(0, c.incendie_fumee_degats);
+        c.incendie_fumee_rayon = Math.max(1, Math.min(8, c.incendie_fumee_rayon));
+        c.lance_longueur_tuyau = Math.max(5, c.lance_longueur_tuyau);
+        c.lance_portee = Math.max(4, Math.min(32, c.lance_portee));
+        if (c.lance_vehicules == null) c.lance_vehicules = new java.util.ArrayList<>();
+        c.forcement_rayon = Math.max(4, c.forcement_rayon);
         if (ok) {
             try {
                 Files.createDirectories(f.getParent());

@@ -1047,8 +1047,9 @@ public final class SecoursService {
         d.staff.put(id, g);
         d.setDirty();
         if (on != null) {
-            if (isNew) giveTablet(on);
+            // Plus de tablette donnée au recrutement (02/11) : tout passe par l'application Secours du téléphone (/secours tablette reste possible).
             tell(on, "§bSecours : votre grade est maintenant " + SecoursData.GRADES[g] + ".");
+            if (isNew) tell(on, "§7Ouvrez l'application §cSecours§7 de votre téléphone pour les alertes, les dossiers médicaux et votre service.");
         }
         return name + " est maintenant " + SecoursData.GRADES[g] + ".";
     }

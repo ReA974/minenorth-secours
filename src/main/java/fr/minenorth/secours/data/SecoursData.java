@@ -47,7 +47,13 @@ public class SecoursData extends SavedData {
         public String site = "", dim = "", dispatch = "";
         public int x, y, z;
         public long startMs;
+        /** Foyers (FoyerBlock) et braises (BraiseBlock) encore actifs, en BlockPos.asLong. */
         public final java.util.List<Long> fires = new java.util.ArrayList<>();
+        /** Reprises de feu déjà survenues, et braises déjà posées depuis la dernière extinction. */
+        public int rekindles;
+        public boolean embersPlaced;
+        /** Incendie de laboratoire clandestin (mod drogue) plutôt que d'un site défini par les OP. */
+        public boolean lab;
     }
 
     public final Map<String, Site> sites = new LinkedHashMap<>();
@@ -157,6 +163,7 @@ public class SecoursData extends SavedData {
             n.id = t.getUUID("id"); n.site = t.getString("site"); n.dim = t.getString("dim"); n.dispatch = t.getString("dispatch");
             n.x = t.getInt("x"); n.y = t.getInt("y"); n.z = t.getInt("z"); n.startMs = t.getLong("start");
             for (long l : t.getLongArray("fires")) n.fires.add(l);
+            n.rekindles = t.getInt("rekindles"); n.embersPlaced = t.getBoolean("embers"); n.lab = t.getBoolean("lab");
             d.incidents.put(n.id, n);
         }
         ListTag sl = tag.getList("staff", Tag.TAG_COMPOUND);
@@ -208,6 +215,7 @@ public class SecoursData extends SavedData {
             t.putUUID("id", n.id); t.putString("site", n.site); t.putString("dim", n.dim); t.putString("dispatch", n.dispatch);
             t.putInt("x", n.x); t.putInt("y", n.y); t.putInt("z", n.z); t.putLong("start", n.startMs);
             t.putLongArray("fires", n.fires.stream().mapToLong(Long::longValue).toArray());
+            t.putInt("rekindles", n.rekindles); t.putBoolean("embers", n.embersPlaced); t.putBoolean("lab", n.lab);
             inl.add(t);
         }
         tag.put("incidents", inl);

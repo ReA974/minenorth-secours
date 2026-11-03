@@ -23,7 +23,7 @@ public final class ModNetwork {
     public static final int A_ALERTS = 1, A_ROSTER = 2, A_DISPATCH = 3, A_GRADE = 4, A_CLOSE = 5, A_CLINIC_PAY = 6, A_DUTY = 7, A_FILE = 8, A_PHONE = 9;
     public static final UUID NONE = new UUID(0, 0);
 
-    private static final String PROTOCOL = "7";
+    private static final String PROTOCOL = "9";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MineNorthSecours.MOD_ID, "network"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
     private static int id = 0;
@@ -38,6 +38,8 @@ public final class ModNetwork {
         CHANNEL.registerMessage(id++, DefibStartPacket.class, DefibStartPacket::encode, DefibStartPacket::decode, DefibStartPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(id++, DefibResultPacket.class, DefibResultPacket::encode, DefibResultPacket::decode, DefibResultPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(id++, WakePacket.class, WakePacket::encode, WakePacket::decode, WakePacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(id++, ThermalPacket.class, ThermalPacket::encode, ThermalPacket::decode, ThermalPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(id++, HoseLinksPacket.class, HoseLinksPacket::encode, HoseLinksPacket::decode, HoseLinksPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         id = PhoneNet.register(CHANNEL, id);   // application « téléphone » (état + ouverture)
     }
 
@@ -50,6 +52,52 @@ public final class ModNetwork {
         static void handle(ComaListPacket p, Supplier<NetworkEvent.Context> c) {
             c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                     () -> () -> fr.minenorth.secours.client.ClientNetworkHandler.comaList(p)));
+            c.get().setPacketHandled(true);
+        }
+    }
+
+    /** Caméra thermique : points chauds autour du pompier, {x, y, z, type} (0 foyer, 1 braise, 2 blessé inconscient). Envoyé chaque seconde. */
+    public record ThermalPacket(List<int[]> points) {
+        public static final int MAX = 64;
+        static void encode(ThermalPacket p, FriendlyByteBuf b) {
+            b.writeVarInt(p.points.size());
+            for (int[] v : p.points) { b.writeInt(v[0]); b.writeInt(v[1]); b.writeInt(v[2]); b.writeByte(v[3]); }
+        }
+        static ThermalPacket decode(FriendlyByteBuf b) {
+            int n = b.readVarInt();
+            if (n < 0 || n > MAX) throw new IllegalArgumentException("trop de points chauds");
+            List<int[]> out = new java.util.ArrayList<>(n);
+            for (int i = 0; i < n; i++) out.add(new int[]{b.readInt(), b.readInt(), b.readInt(), b.readByte()});
+            return new ThermalPacket(out);
+        }
+        static void handle(ThermalPacket p, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> fr.minenorth.secours.client.ThermalOverlay.receive(p.points())));
+            c.get().setPacketHandled(true);
+        }
+    }
+
+    /**
+     * Tuyaux à dessiner dans la dimension : {id du pompier, type, a, b, c, longueur}. Type 0 = bouche d'incendie en (a, b, c),
+     * type 1 = véhicule d'id a. Liste complète, renvoyée quand elle change.
+     */
+    public record HoseLinksPacket(List<int[]> links) {
+        public static final int MAX = 64;
+        static void encode(HoseLinksPacket p, FriendlyByteBuf b) {
+            int n = Math.min(MAX, p.links.size());
+            b.writeVarInt(n);
+            for (int i = 0; i < n; i++) for (int v : p.links.get(i)) b.writeInt(v);
+        }
+        static HoseLinksPacket decode(FriendlyByteBuf b) {
+            int n = b.readVarInt();
+            if (n < 0 || n > MAX) throw new IllegalArgumentException("trop de tuyaux");
+            List<int[]> out = new java.util.ArrayList<>(n);
+            for (int i = 0; i < n; i++) out.add(new int[]{b.readInt(), b.readInt(), b.readInt(), b.readInt(), b.readInt(), b.readInt()});
+            return new HoseLinksPacket(out);
+        }
+        static void handle(HoseLinksPacket p, Supplier<NetworkEvent.Context> c) {
+            c.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> fr.minenorth.secours.client.HoseRenderer.receive(p.links())));
             c.get().setPacketHandled(true);
         }
     }

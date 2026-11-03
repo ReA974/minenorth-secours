@@ -20,6 +20,7 @@ public final class Hud {
     @SubscribeEvent
     public static void register(RegisterGuiOverlaysEvent e) {
         e.registerAboveAll("blessures", (gui, g, partialTick, w, h) -> render(g, w, h));
+        e.registerBelowAll("camera_thermique", (gui, g, partialTick, w, h) -> ThermalOverlay.render(g, w, h));
     }
 
     private static void centered(GuiGraphics g, Font font, String text, int cx, int y, int color) {

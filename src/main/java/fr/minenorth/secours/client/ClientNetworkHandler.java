@@ -31,6 +31,7 @@ public final class ClientNetworkHandler {
     public static void tablet(ModNetwork.TabletPacket p) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof TabletScreen s) s.update(p);
+        else if (PhoneAppClient.phone() && fr.minenorth.secours.client.phone.PhoneSecours.handle(p)) return;
         else mc.setScreen(new TabletScreen(p));
     }
 

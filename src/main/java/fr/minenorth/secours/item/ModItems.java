@@ -28,6 +28,7 @@ public final class ModItems {
                 out.accept(BANDAGE_ITEM.get());
                 out.accept(TROUSSE_ITEM.get());
                 out.accept(DEFIB_ITEM.get());
+                for (Item it : fr.minenorth.secours.pompier.Pompier.tabItems()) out.accept(it);
             };
 
     public static void register(IEventBus modBus) {

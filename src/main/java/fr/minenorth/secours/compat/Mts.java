@@ -108,6 +108,17 @@ public final class Mts {
         return false;
     }
 
+    /** Nom du véhicule en minuscules (pack + systemName de sa définition), ou "" si MTS ne répond pas. */
+    public static String vehicleName(Entity vehicle) {
+        try {
+            Object def = field(field(vehicle, "entity"), "definition");
+            Object pack = field(def, "packID"), sys = field(def, "systemName");
+            return ((pack == null ? "" : pack + ":") + (sys == null ? "" : sys)).toLowerCase(java.util.Locale.ROOT);
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
     /** Vrai si le joueur est assis dans un siège MTS. */
     public static boolean isSeated(ServerPlayer p) { return isSeat(p.getVehicle()); }
 

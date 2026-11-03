@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "": [
+      {"model": "minenorthsecours:block/foyer_0"},
+      {"model": "minenorthsecours:block/foyer_1"},
+      {"model": "minenorthsecours:block/foyer_0", "y": 90},
+      {"model": "minenorthsecours:block/foyer_1", "y": 90}
+    ]
+  }
+}

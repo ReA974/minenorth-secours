@@ -58,6 +58,16 @@ public final class SecoursCommands {
                     SecoursService.giveTablet(target);
                     return say(c.getSource(), "Tablette des secours remise à " + fr.minenorth.api.MineNorth.displayName(target) + ".");
                 })))
+                .then(Commands.literal("kit").then(Commands.argument("joueur", EntityArgument.player()).executes(c -> {
+                    ServerPlayer target = EntityArgument.getPlayer(c, "joueur");
+                    for (net.minecraft.world.item.Item it : fr.minenorth.secours.pompier.Pompier.tabItems()) {
+                        if (it == fr.minenorth.secours.pompier.Pompier.HYDRANT_ITEM.get()) continue;
+                        net.minecraft.world.item.ItemStack st = new net.minecraft.world.item.ItemStack(it, it == fr.minenorth.secours.pompier.Pompier.ROULEAU.get() ? 2 : 1);
+                        if (!target.getInventory().add(st)) target.drop(st, false);
+                    }
+                    return say(c.getSource(), "Équipement pompier remis à " + fr.minenorth.api.MineNorth.displayName(target)
+                            + " (lance, 2 rouleaux de tuyau, hache, halligan, caméra thermique, couverture, masque ARI).");
+                })))
                 .then(Commands.literal("incendie")
                         .then(Commands.literal("ajouter").then(Commands.argument("nom", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .executes(x -> say(x.getSource(), addSite(x.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.StringArgumentType.getString(x, "nom"))))))

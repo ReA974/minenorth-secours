@@ -20,6 +20,7 @@ public class SanteScreen extends Screen {
     /** Appelé par le paquet d'état (thread client). */
     public static void receive(VieNet.State s) {
         Minecraft mc = Minecraft.getInstance();
+        if (fr.minenorth.secours.client.PhoneAppClient.phone() && fr.minenorth.secours.client.phone.PhoneSecours.handleSante(s)) return;
         if (mc.screen instanceof SanteScreen sc) sc.s = s;
         else if (s.open()) mc.setScreen(new SanteScreen(s));
     }

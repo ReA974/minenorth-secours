@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": {"model": "minenorthsecours:block/bouche_incendie"},
+    "facing=east": {"model": "minenorthsecours:block/bouche_incendie", "y": 90},
+    "facing=south": {"model": "minenorthsecours:block/bouche_incendie", "y": 180},
+    "facing=west": {"model": "minenorthsecours:block/bouche_incendie", "y": 270}
+  }
+}

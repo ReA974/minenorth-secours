@@ -22,7 +22,8 @@ class ItemModelsTest {
     /** Objets de santé fusionnés depuis l'ancien mod vie : identifiants historiques « minenorthvie ». */
     private static final Path ASSETS_VIE = Path.of("src/main/resources/assets/minenorthvie");
     private static final List<String> MODELS_VIE = List.of("medicament", "vitamines", "vaccin");
-    private static final List<String> MODELS = List.of("defibrillateur", "trousse_soins", "bandage", "tablette_secours", "medicament", "vitamines", "vaccin");
+    private static final List<String> MODELS = List.of("defibrillateur", "trousse_soins", "bandage", "tablette_secours", "medicament", "vitamines", "vaccin",
+            "lance_incendie", "hache_pompier", "halligan", "camera_thermique", "couverture_antifeu", "masque_ari", "rouleau_tuyau");
 
     private static Path assets(String name) { return MODELS_VIE.contains(name) ? ASSETS_VIE : ASSETS; }
 

@@ -7,5 +7,16 @@
   "itemGroup.minenorthsecours": "Secours MineNorth",
   "key.minenorthsecours.wake": "Se réveiller à l'hôpital",
   "key.minenorthsecours.skip": "Sortir de l'hôpital maintenant (opérateurs)",
-  "key.categories.minenorthsecours": "Secours MineNorth"
+  "key.categories.minenorthsecours": "Secours MineNorth",
+  "block.minenorthsecours.foyer": "Foyer d'incendie",
+  "block.minenorthsecours.braise": "Braises",
+  "block.minenorthsecours.bouche_incendie": "Bouche d'incendie",
+  "item.minenorthsecours.lance_incendie": "Lance à incendie",
+  "item.minenorthsecours.hache_pompier": "Hache de pompier",
+  "item.minenorthsecours.halligan": "Halligan (pied-de-biche)",
+  "item.minenorthsecours.camera_thermique": "Caméra thermique",
+  "item.minenorthsecours.couverture_antifeu": "Couverture anti-feu",
+  "item.minenorthsecours.masque_ari": "Masque ARI",
+  "item.minenorthsecours.bouteille_ari": "Bouteille d'air ARI",
+  "item.minenorthsecours.rouleau_tuyau": "Rouleau de tuyau"
 }
