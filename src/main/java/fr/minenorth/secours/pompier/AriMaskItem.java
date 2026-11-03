@@ -25,8 +25,13 @@ public class AriMaskItem extends Item implements Equipable {
 
     public static boolean wearing(Player p) { return p.getItemBySlot(EquipmentSlot.HEAD).is(Pompier.MASQUE.get()); }
 
-    /** Bouteille d'air sur soi (inventaire) : le masque n'est alimenté qu'avec elle. */
-    public static boolean hasBottle(Player p) { return p.getInventory().contains(new ItemStack(Pompier.BOUTEILLE.get())); }
+    /** Bouteille d'air sur soi (inventaire, ou portée sur le dos : emplacement Dos du mod Vêtements) : le masque n'est alimenté qu'avec elle. */
+    public static boolean hasBottle(Player p) {
+        if (p.getInventory().contains(new ItemStack(Pompier.BOUTEILLE.get()))) return true;
+        // emplacement Dos du mod Vêtements, écrit dans les données persistantes du joueur (pas de dépendance au mod)
+        net.minecraft.nbt.CompoundTag dos = p.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG).getCompound("mnv_acc").getCompound("dos");
+        return !dos.isEmpty() && ItemStack.of(dos).is(Pompier.BOUTEILLE.get());
+    }
 
     /** Protégé de la fumée : masque porté ET bouteille d'air. */
     public static boolean protects(Player p) { return wearing(p) && hasBottle(p); }

@@ -16,5 +16,6 @@ public class AriBottleItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tip, TooltipFlag flag) {
         tip.add(Component.literal("§7Alimente le masque ARI : sans elle, le masque ne protège pas de la fumée"));
+        tip.add(Component.literal("§7Se porte sur le dos : emplacement Dos de l'inventaire"));
     }
 }
